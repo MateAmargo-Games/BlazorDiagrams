@@ -1,0 +1,136 @@
+﻿@page "/"
+
+<PageTitle>BlazorDiagrams - Native Diagramming for Blazor</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4">BlazorDiagrams</h1>
+            <p class="lead">Una librería de diagramming completamente nativa para Blazor .NET 8</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">🎯 100% Nativo .NET</h5>
+                    <p class="card-text">
+                        Desarrollado completamente en C# y Blazor, sin dependencias de JavaScript 
+                        (excepto para exportación de imágenes). Renderizado SVG nativo de alta calidad.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">⚡ Alto Rendimiento</h5>
+                    <p class="card-text">
+                        Virtualización para grandes grafos, caching inteligente y optimizaciones 
+                        de rendering. Monitor de performance integrado.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">📊 Múltiples Layouts</h5>
+                    <ul>
+                        <li>Tree Layout (Organigramas)</li>
+                        <li>Layered Digraph (Flowcharts)</li>
+                        <li>Force Directed</li>
+                        <li>Circular & Grid</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">🎨 Personalizable</h5>
+                    <ul>
+                        <li>Templates con RenderFragment</li>
+                        <li>Estilos CSS personalizados</li>
+                        <li>Múltiples tipos de enlaces</li>
+                        <li>Arrowheads configurables</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">🛠️ Características</h5>
+                    <ul>
+                        <li>Drag & Drop</li>
+                        <li>Zoom & Pan</li>
+                        <li>Undo/Redo</li>
+                        <li>Keyboard Shortcuts</li>
+                        <li>Exportación SVG/PNG/JSON</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h5>💡 Ejemplos Interactivos</h5>
+                <p class="mb-2">Explora los ejemplos en el menú lateral para ver BlazorDiagrams en acción:</p>
+                <ul class="mb-0">
+                    <li><strong>Org Chart:</strong> Organigrama jerárquico con TreeLayout</li>
+                    <li><strong>Flowchart:</strong> Diagrama de flujo con LayeredDigraphLayout</li>
+                    <li><strong>Network:</strong> Grafo de red con ForceDirectedLayout</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3>Instalación</h3>
+            <pre class="bg-dark text-light p-3 rounded"><code>dotnet add package BlazorDiagrams</code></pre>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <h3>Uso Básico</h3>
+            <pre class="bg-dark text-light p-3 rounded"><code>@@using BlazorDiagrams.Core.Models
+@@using BlazorDiagrams.Core.Components
+@@using BlazorDiagrams.Core.Layouts
+
+&lt;Diagram Model="@@_model" Width="100%" Height="500px" ShowGrid="true"&gt;
+&lt;/Diagram&gt;
+
+@@code {
+    private DiagramModel _model = new();
+
+    protected override void OnInitialized()
+    {
+        var node1 = _model.AddNode("1", new Point(100, 100));
+        var node2 = _model.AddNode("2", new Point(300, 100));
+        _model.AddLink(node1, node2);
+    }
+}</code></pre>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: 1px solid #ddd;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+</style>

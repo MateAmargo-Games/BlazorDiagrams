@@ -1,0 +1,202 @@
+@page "/network"
+@rendermode InteractiveServer
+
+<PageTitle>Network Graph Sample</PageTitle>
+
+<h1>Network Graph Example</h1>
+
+<p>Demonstration of ForceDirectedLayout for network and relationship graphs.</p>
+
+<div style="margin-bottom: 20px;">
+    <button class="btn btn-primary" @onclick="StartSimulation">Start Simulation</button>
+    <button class="btn btn-secondary" @onclick="StopSimulation">Stop Simulation</button>
+    <button class="btn btn-success" @onclick="AddNode">Add Node</button>
+    <button class="btn btn-info" @onclick="ConnectRandom">Connect Random</button>
+    <button class="btn btn-warning" @onclick="ResetNetwork">Reset</button>
+</div>
+
+<div class="mb-3">
+    <label>Iterations: @_iterations / @_maxIterations</label>
+    <div class="progress" style="height: 5px;">
+        <div class="progress-bar" role="progressbar" 
+             style="width: @((_iterations / (double)_maxIterations) * 100)%"></div>
+    </div>
+</div>
+
+<div style="border: 1px solid #ddd; border-radius: 5px; overflow: hidden;">
+    <Diagram Model="@_model" 
+             Width="100%" 
+             Height="600px"
+             ShowGrid="true"
+             ShowZoomControls="true"
+             GridSize="20">
+        <NodeTemplate Context="node">
+            <div style="width: 100%; height: 100%; 
+                        background: @GetNodeColor(node); 
+                        border-radius: 50%;
+                        border: 3px solid @(node.IsSelected ? "#fff" : "#333");
+                        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-weight: bold;
+                        color: white;
+                        cursor: pointer;
+                        transition: transform 0.2s;">
+                @if (node.Data is NodeData data)
+                {
+                    <span>@data.Label</span>
+                }
+            </div>
+        </NodeTemplate>
+    </Diagram>
+</div>
+
+<div class="mt-3">
+    <div class="row">
+        <div class="col-md-4">
+            <strong>Nodes:</strong> @_model.Nodes.Count
+        </div>
+        <div class="col-md-4">
+            <strong>Links:</strong> @_model.Links.Count
+        </div>
+        <div class="col-md-4">
+            <strong>Status:</strong> @(_isSimulating ? "Running" : "Stopped")
+        </div>
+    </div>
+</div>
+
+@code {
+    private DiagramModel _model = new();
+    private ForceDirectedLayout? _layout;
+    private bool _isSimulating = false;
+    private int _iterations = 0;
+    private int _maxIterations = 100;
+    private int _nodeCounter = 6;
+    private System.Threading.Timer? _timer;
+
+    protected override void OnInitialized()
+    {
+        InitializeNetwork();
+    }
+
+    private void InitializeNetwork()
+    {
+        var random = new Random(42);
+        
+        // Create nodes
+        for (int i = 1; i <= 5; i++)
+        {
+            var node = _model.AddNode($"node{i}", new Point(random.Next(100, 700), random.Next(100, 500)), new NodeData
+            {
+                Label = $"N{i}",
+                Value = random.Next(1, 100)
+            });
+            node.Size = new Size(60, 60);
+        }
+
+        // Create links
+        _model.AddLink(_model.GetNode("node1")!, _model.GetNode("node2")!);
+        _model.AddLink(_model.GetNode("node1")!, _model.GetNode("node3")!);
+        _model.AddLink(_model.GetNode("node2")!, _model.GetNode("node3")!);
+        _model.AddLink(_model.GetNode("node2")!, _model.GetNode("node4")!);
+        _model.AddLink(_model.GetNode("node3")!, _model.GetNode("node5")!);
+        _model.AddLink(_model.GetNode("node4")!, _model.GetNode("node5")!);
+
+        _layout = new ForceDirectedLayout
+        {
+            SpringLength = 100,
+            SpringConstant = 0.3,
+            RepulsionConstant = 500,
+            Iterations = _maxIterations
+        };
+    }
+
+    private void StartSimulation()
+    {
+        if (_isSimulating) return;
+
+        _isSimulating = true;
+        _iterations = 0;
+
+        _timer = new System.Threading.Timer(_ =>
+        {
+            if (_iterations < _maxIterations)
+            {
+                // Apply layout iteratively (ForceDirectedLayout applies all iterations at once)
+                _layout?.Apply(_model);
+                _iterations = _maxIterations; // Mark as complete
+                InvokeAsync(StateHasChanged);
+                StopSimulation();
+            }
+        }, null, 0, 50);
+    }
+
+    private void StopSimulation()
+    {
+        _isSimulating = false;
+        _timer?.Dispose();
+        _timer = null;
+    }
+
+    private void AddNode()
+    {
+        var random = new Random();
+        var node = _model.AddNode($"node{_nodeCounter}", 
+            new Point(random.Next(100, 700), random.Next(100, 500)), 
+            new NodeData
+            {
+                Label = $"N{_nodeCounter}",
+                Value = random.Next(1, 100)
+            });
+        node.Size = new Size(60, 60);
+        _nodeCounter++;
+    }
+
+    private void ConnectRandom()
+    {
+        if (_model.Nodes.Count < 2) return;
+
+        var random = new Random();
+        var nodes = _model.Nodes.ToList();
+        var node1 = nodes[random.Next(nodes.Count)];
+        var node2 = nodes[random.Next(nodes.Count)];
+
+        if (node1 != node2 && !_model.Links.Any(l => 
+            (l.FromNode == node1 && l.ToNode == node2) || 
+            (l.FromNode == node2 && l.ToNode == node1)))
+        {
+            _model.AddLink(node1, node2);
+        }
+    }
+
+    private void ResetNetwork()
+    {
+        StopSimulation();
+        _model = new DiagramModel();
+        _nodeCounter = 6;
+        InitializeNetwork();
+    }
+
+    private string GetNodeColor(Node node)
+    {
+        if (node.Data is NodeData data)
+        {
+            var hue = (data.Value * 3.6) % 360;
+            return $"hsl({hue}, 70%, 50%)";
+        }
+        return "#6c757d";
+    }
+
+    public void Dispose()
+    {
+        StopSimulation();
+    }
+
+    public class NodeData
+    {
+        public string Label { get; set; } = "";
+        public int Value { get; set; }
+    }
+}
+

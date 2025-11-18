@@ -1,0 +1,435 @@
+@using BlazorDiagrams.Core.Models
+@using BlazorDiagrams.Core.Geometry
+@using BlazorDiagrams.Core.Rendering
+@using Microsoft.AspNetCore.Components.Web
+@namespace BlazorDiagrams.Core.Components
+
+<div class="blazor-diagram-container" 
+     style="width: @Width; height: @Height; overflow: hidden; position: relative; background-color: @BackgroundColor;">
+    
+    <svg width="100%" 
+         height="100%" 
+         @ref="_svgElement"
+         @onmousedown="OnMouseDown"
+         @onmousemove="OnMouseMove"
+         @onmouseup="OnMouseUp"
+         @onwheel="OnWheel"
+         @onwheel:preventDefault="true"
+         style="cursor: @GetCursor();">
+        
+        @if (Model != null)
+        {
+            <!-- Define markers for arrowheads -->
+            @((MarkupString)_renderer.RenderMarkers())
+            
+            <!-- Main transform group for zoom and pan -->
+            <g transform="@_renderContext.GetTransformString()">
+                
+                <!-- Grid background -->
+                @if (ShowGrid)
+                {
+                    @((MarkupString)_renderer.RenderGrid())
+                }
+                
+                <!-- Groups (rendered first, behind nodes) -->
+                @foreach (var group in Model.Groups.OrderBy(g => g.IsSelected ? 1 : 0))
+                {
+                    @((MarkupString)_renderer.RenderGroup(group))
+                }
+                
+                <!-- Links (rendered before nodes so they appear behind) -->
+                @foreach (var link in Model.Links.OrderBy(l => l.IsSelected ? 1 : 0))
+                {
+                    @((MarkupString)_renderer.RenderLink(link))
+                }
+                
+                <!-- Nodes -->
+                @foreach (var node in Model.Nodes.OrderBy(n => n.IsSelected ? 1 : 0))
+                {
+                    @if (NodeTemplate != null && node.IsVisible)
+                    {
+                        <!-- Custom node template -->
+                        <g transform="translate(@node.Position.X.ToString("F2"), @node.Position.Y.ToString("F2"))"
+                           class="@(node.IsSelected ? "diagram-node diagram-node-selected" : "diagram-node")"
+                           @key="node.Id">
+                            <foreignObject width="@node.Size.Width.ToString("F2")" 
+                                         height="@node.Size.Height.ToString("F2")"
+                                         @onmousedown="@(e => OnNodeMouseDown(e, node))"
+                                         @onmousedown:stopPropagation="true">
+                                <div style="width: 100%; height: 100%; pointer-events: all;">
+                                    @NodeTemplate(node)
+                                </div>
+                            </foreignObject>
+                        </g>
+                    }
+                    else
+                    {
+                        <!-- Default SVG node rendering -->
+                        <g @key="node.Id" 
+                           @onmousedown="@(e => OnNodeMouseDown(e, node))"
+                           @onmousedown:stopPropagation="true">
+                            @((MarkupString)_renderer.RenderNode(node))
+                        </g>
+                    }
+                }
+                
+                <!-- Selection rectangle -->
+                @if (_isSelectingRect && _selectionStart.HasValue && _selectionEnd.HasValue)
+                {
+                    var rect = GetSelectionRect(_selectionStart.Value, _selectionEnd.Value);
+                    <rect x="@rect.X.ToString("F2")" 
+                          y="@rect.Y.ToString("F2")" 
+                          width="@rect.Width.ToString("F2")" 
+                          height="@rect.Height.ToString("F2")"
+                          fill="rgba(100, 150, 255, 0.2)"
+                          stroke="rgba(100, 150, 255, 0.8)"
+                          stroke-width="1"
+                          stroke-dasharray="5,5" />
+                }
+            </g>
+        }
+    </svg>
+    
+    @if (ShowZoomControls)
+    {
+        <div class="diagram-zoom-controls" style="position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px;">
+            <button @onclick="ZoomIn" class="diagram-zoom-button" title="Zoom In">+</button>
+            <button @onclick="ZoomOut" class="diagram-zoom-button" title="Zoom Out">−</button>
+            <button @onclick="ZoomToFit" class="diagram-zoom-button" title="Zoom to Fit">⊡</button>
+            <button @onclick="ResetZoom" class="diagram-zoom-button" title="Reset Zoom">1:1</button>
+        </div>
+    }
+</div>
+
+<style>
+    .blazor-diagram-container {
+        border: 1px solid #ccc;
+        user-select: none;
+    }
+    
+    .diagram-node {
+        cursor: move;
+    }
+    
+    .diagram-node-selected {
+        filter: drop-shadow(0 0 5px rgba(0, 123, 255, 0.8));
+    }
+    
+    .diagram-link-selected {
+        filter: drop-shadow(0 0 3px rgba(0, 123, 255, 0.8));
+    }
+    
+    .diagram-zoom-button {
+        width: 35px;
+        height: 35px;
+        border: 1px solid #ccc;
+        background: white;
+        cursor: pointer;
+        font-size: 16px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .diagram-zoom-button:hover {
+        background: #f0f0f0;
+        border-color: #999;
+    }
+    
+    .diagram-zoom-button:active {
+        background: #e0e0e0;
+    }
+</style>
+
+@code {
+    private ElementReference _svgElement;
+    private RenderContext _renderContext = new();
+    private SvgRenderer _renderer = null!;
+    
+    // Interaction state
+    private bool _isPanning;
+    private bool _isDraggingNode;
+    private bool _isSelectingRect;
+    private Point? _lastMousePosition;
+    private Point? _selectionStart;
+    private Point? _selectionEnd;
+    private Node? _draggedNode;
+    private List<Node> _draggedNodes = new();
+    private Point _dragOffset;
+    
+    [Parameter] public DiagramModel? Model { get; set; }
+    [Parameter] public string Width { get; set; } = "100%";
+    [Parameter] public string Height { get; set; } = "600px";
+    [Parameter] public string BackgroundColor { get; set; } = "#ffffff";
+    [Parameter] public bool ShowGrid { get; set; } = true;
+    [Parameter] public double GridSize { get; set; } = 20;
+    [Parameter] public bool ShowZoomControls { get; set; } = true;
+    [Parameter] public bool EnablePanning { get; set; } = true;
+    [Parameter] public bool EnableZoom { get; set; } = true;
+    [Parameter] public RenderFragment<Node>? NodeTemplate { get; set; }
+    [Parameter] public EventCallback<Node> OnNodeClicked { get; set; }
+    [Parameter] public EventCallback<List<Node>> OnSelectionChanged { get; set; }
+    
+    protected override void OnInitialized()
+    {
+        if (Model != null)
+        {
+            _renderContext.Model = Model;
+            _renderContext.ShowGrid = ShowGrid;
+            _renderContext.GridSize = GridSize;
+            _renderContext.BackgroundColor = BackgroundColor;
+            _renderer = new SvgRenderer(_renderContext);
+            
+            Model.PropertyChanged += (s, e) => StateHasChanged();
+        }
+    }
+    
+    protected override void OnParametersSet()
+    {
+        if (Model != null)
+        {
+            _renderContext.Model = Model;
+            _renderContext.Zoom = Model.Zoom;
+            _renderContext.PanOffset = Model.PanOffset;
+        }
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && Model?.Layout != null)
+        {
+            Model.ApplyLayout();
+            StateHasChanged();
+        }
+    }
+    
+    private void OnMouseDown(MouseEventArgs e)
+    {
+        if (Model == null) return;
+        
+        var diagramPoint = ScreenToDiagram(new Point(e.OffsetX, e.OffsetY));
+        _lastMousePosition = new Point(e.OffsetX, e.OffsetY);
+        
+        if (e.Button == 0) // Left button
+        {
+            if (e.ShiftKey)
+            {
+                // Start rectangle selection
+                _isSelectingRect = true;
+                _selectionStart = diagramPoint;
+                _selectionEnd = diagramPoint;
+            }
+            else if (EnablePanning && (e.CtrlKey || e.Button == 1)) // Ctrl+click or middle button
+            {
+                _isPanning = true;
+            }
+            else
+            {
+                // Click on empty space - clear selection
+                if (!e.CtrlKey)
+                {
+                    Model.ClearSelection();
+                    OnSelectionChanged.InvokeAsync(Model.GetSelectedNodes().ToList());
+                }
+            }
+        }
+        else if (e.Button == 1 && EnablePanning) // Middle button
+        {
+            _isPanning = true;
+        }
+    }
+    
+    private void OnNodeMouseDown(MouseEventArgs e, Node node)
+    {
+        if (Model == null) return;
+        
+        var diagramPoint = ScreenToDiagram(new Point(e.OffsetX, e.OffsetY));
+        _lastMousePosition = new Point(e.OffsetX, e.OffsetY);
+        
+        if (e.Button == 0) // Left button
+        {
+            if (e.CtrlKey)
+            {
+                // Toggle selection
+                node.IsSelected = !node.IsSelected;
+            }
+            else if (!node.IsSelected)
+            {
+                // Select this node only
+                Model.ClearSelection();
+                node.IsSelected = true;
+            }
+            
+            // Start dragging
+            if (node.IsDraggable && !Model.IsReadOnly)
+            {
+                _isDraggingNode = true;
+                _draggedNode = node;
+                _dragOffset = new Point(diagramPoint.X - node.Position.X, diagramPoint.Y - node.Position.Y);
+                
+                // Collect all selected nodes for multi-drag
+                _draggedNodes = Model.GetSelectedNodes().ToList();
+            }
+            
+            OnNodeClicked.InvokeAsync(node);
+            OnSelectionChanged.InvokeAsync(Model.GetSelectedNodes().ToList());
+        }
+    }
+    
+    private void OnMouseMove(MouseEventArgs e)
+    {
+        if (Model == null || !_lastMousePosition.HasValue) return;
+        
+        var currentPos = new Point(e.OffsetX, e.OffsetY);
+        var diagramPoint = ScreenToDiagram(currentPos);
+        
+        if (_isPanning && EnablePanning)
+        {
+            var delta = currentPos - _lastMousePosition.Value;
+            Model.PanOffset = new Point(
+                Model.PanOffset.X + delta.X / Model.Zoom,
+                Model.PanOffset.Y + delta.Y / Model.Zoom
+            );
+            _renderContext.PanOffset = Model.PanOffset;
+        }
+        else if (_isDraggingNode && _draggedNode != null)
+        {
+            var newPos = new Point(diagramPoint.X - _dragOffset.X, diagramPoint.Y - _dragOffset.Y);
+            var deltaPos = newPos - _draggedNode.Position;
+            
+            // Move all selected nodes
+            foreach (var node in _draggedNodes)
+            {
+                node.Position = new Point(node.Position.X + deltaPos.X, node.Position.Y + deltaPos.Y);
+            }
+        }
+        else if (_isSelectingRect && _selectionStart.HasValue)
+        {
+            _selectionEnd = diagramPoint;
+            
+            // Update selection based on rectangle
+            var rect = GetSelectionRect(_selectionStart.Value, diagramPoint);
+            foreach (var node in Model.Nodes)
+            {
+                node.IsSelected = rect.Intersects(node.Bounds);
+            }
+        }
+        
+        _lastMousePosition = currentPos;
+        StateHasChanged();
+    }
+    
+    private void OnMouseUp(MouseEventArgs e)
+    {
+        _isPanning = false;
+        _isDraggingNode = false;
+        _draggedNode = null;
+        _draggedNodes.Clear();
+        
+        if (_isSelectingRect && Model != null)
+        {
+            _isSelectingRect = false;
+            _selectionStart = null;
+            _selectionEnd = null;
+            OnSelectionChanged.InvokeAsync(Model.GetSelectedNodes().ToList());
+        }
+        
+        _lastMousePosition = null;
+    }
+    
+    private void OnWheel(WheelEventArgs e)
+    {
+        if (Model == null || !EnableZoom) return;
+        
+        var zoomFactor = e.DeltaY < 0 ? 1.1 : 0.9;
+        var newZoom = Math.Clamp(Model.Zoom * zoomFactor, 0.1, 10.0);
+        
+        // Zoom towards mouse position
+        var mousePos = new Point(e.OffsetX, e.OffsetY);
+        var diagramPoint = ScreenToDiagram(mousePos);
+        
+        Model.Zoom = newZoom;
+        _renderContext.Zoom = newZoom;
+        
+        StateHasChanged();
+    }
+    
+    private void ZoomIn()
+    {
+        if (Model != null)
+        {
+            Model.Zoom = Math.Clamp(Model.Zoom * 1.2, 0.1, 10.0);
+            _renderContext.Zoom = Model.Zoom;
+            StateHasChanged();
+        }
+    }
+    
+    private void ZoomOut()
+    {
+        if (Model != null)
+        {
+            Model.Zoom = Math.Clamp(Model.Zoom / 1.2, 0.1, 10.0);
+            _renderContext.Zoom = Model.Zoom;
+            StateHasChanged();
+        }
+    }
+    
+    private void ResetZoom()
+    {
+        if (Model != null)
+        {
+            Model.Zoom = 1.0;
+            Model.PanOffset = Point.Zero;
+            _renderContext.Zoom = 1.0;
+            _renderContext.PanOffset = Point.Zero;
+            StateHasChanged();
+        }
+    }
+    
+    private void ZoomToFit()
+    {
+        if (Model == null || Model.Nodes.Count == 0) return;
+        
+        var bounds = Model.GetBoundingBox();
+        var padding = 50;
+        
+        // Calculate zoom to fit
+        var scaleX = (double.Parse(Width.TrimEnd('%', 'p', 'x')) - 2 * padding) / bounds.Width;
+        var scaleY = (double.Parse(Height.TrimEnd('%', 'p', 'x')) - 2 * padding) / bounds.Height;
+        var zoom = Math.Min(Math.Min(scaleX, scaleY), 1.0);
+        
+        Model.Zoom = zoom;
+        Model.PanOffset = new Point(-bounds.X + padding / zoom, -bounds.Y + padding / zoom);
+        _renderContext.Zoom = Model.Zoom;
+        _renderContext.PanOffset = Model.PanOffset;
+        
+        StateHasChanged();
+    }
+    
+    private Point ScreenToDiagram(Point screenPoint)
+    {
+        return _renderContext.ScreenToDiagram(screenPoint);
+    }
+    
+    private Rect GetSelectionRect(Point start, Point end)
+    {
+        var minX = Math.Min(start.X, end.X);
+        var minY = Math.Min(start.Y, end.Y);
+        var maxX = Math.Max(start.X, end.X);
+        var maxY = Math.Max(start.Y, end.Y);
+        
+        return new Rect(minX, minY, maxX - minX, maxY - minY);
+    }
+    
+    private string GetCursor()
+    {
+        if (_isPanning) return "grabbing";
+        if (_isDraggingNode) return "move";
+        if (_isSelectingRect) return "crosshair";
+        if (EnablePanning) return "default";
+        return "default";
+    }
+}
+

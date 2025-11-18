@@ -1,0 +1,200 @@
+@page "/orgchart"
+@rendermode InteractiveServer
+
+<PageTitle>Org Chart Sample</PageTitle>
+
+<h1>Org Chart Example</h1>
+
+<p>Interactive organizational chart demonstrating the TreeLayout for hierarchical structures.</p>
+
+<div style="margin-bottom: 20px;">
+    <button class="btn btn-primary" @onclick="ApplyLayout">Apply Layout</button>
+    <button class="btn btn-secondary" @onclick="AddEmployee">Add Employee</button>
+    <button class="btn btn-danger" @onclick="RemoveSelected">Remove Selected</button>
+</div>
+
+<div style="border: 1px solid #ddd; border-radius: 5px; overflow: hidden;">
+    <Diagram Model="@_model" 
+             Width="100%" 
+             Height="700px"
+             ShowGrid="true"
+             GridSize="20">
+        <NodeTemplate Context="node">
+            <div style="width: 100%; height: 100%; padding: 12px; 
+                        background: @(node.IsSelected ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" : "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)"); 
+                        border-radius: 8px; 
+                        color: @(node.IsSelected ? "white" : "#333"); 
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                        cursor: pointer;
+                        transition: all 0.3s ease;">
+                @if (node.Data is EmployeeData emp)
+                {
+                    <div style="font-weight: bold; font-size: 14px; margin-bottom: 4px;">@emp.Name</div>
+                    <div style="font-size: 12px; opacity: 0.9;">@emp.Title</div>
+                    <div style="font-size: 11px; margin-top: 4px; opacity: 0.8;">@emp.Department</div>
+                }
+            </div>
+        </NodeTemplate>
+    </Diagram>
+</div>
+
+@if (_model.GetSelectedNodes().Any())
+{
+    <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; border-left: 4px solid #667eea;">
+        <h4>Selected Employees (@_model.GetSelectedNodes().Count())</h4>
+        <ul>
+            @foreach (var node in _model.GetSelectedNodes())
+            {
+                @if (node.Data is EmployeeData emp)
+                {
+                    <li><strong>@emp.Name</strong> - @emp.Title (@emp.Department)</li>
+                }
+            }
+        </ul>
+    </div>
+}
+
+@code {
+    private DiagramModel _model = new();
+    private int _employeeCounter = 6;
+
+    protected override void OnInitialized()
+    {
+        InitializeOrgChart();
+    }
+
+    private void InitializeOrgChart()
+    {
+        // CEO
+        var ceo = _model.AddNode("1", new Point(400, 50), new EmployeeData
+        {
+            Name = "John Smith",
+            Title = "CEO",
+            Department = "Executive"
+        });
+        ceo.Size = new Size(180, 90);
+
+        // C-Level
+        var cto = _model.AddNode("2", new Point(200, 200), new EmployeeData
+        {
+            Name = "Sarah Johnson",
+            Title = "CTO",
+            Department = "Technology"
+        });
+        cto.Size = new Size(180, 90);
+
+        var cfo = _model.AddNode("3", new Point(600, 200), new EmployeeData
+        {
+            Name = "Michael Brown",
+            Title = "CFO",
+            Department = "Finance"
+        });
+        cfo.Size = new Size(180, 90);
+
+        // Department Heads
+        var devManager = _model.AddNode("4", new Point(100, 350), new EmployeeData
+        {
+            Name = "Emily Davis",
+            Title = "Dev Manager",
+            Department = "Engineering"
+        });
+        devManager.Size = new Size(180, 90);
+
+        var qaDirector = _model.AddNode("5", new Point(300, 350), new EmployeeData
+        {
+            Name = "Robert Wilson",
+            Title = "QA Director",
+            Department = "Quality"
+        });
+        qaDirector.Size = new Size(180, 90);
+
+        // Create links
+        _model.AddLink(ceo, cto);
+        _model.AddLink(ceo, cfo);
+        _model.AddLink(cto, devManager);
+        _model.AddLink(cto, qaDirector);
+
+        // Apply tree layout
+        var layout = new TreeLayout
+        {
+            Angle = 90, // Down
+            LayerSpacing = 100,
+            NodeSpacing = 50,
+            Arrangement = TreeArrangement.Vertical,
+            Alignment = TreeAlignment.CenterChildren
+        };
+
+        layout.Apply(_model);
+    }
+
+    private void ApplyLayout()
+    {
+        if (_model.Layout != null)
+        {
+            _model.Layout.Apply(_model);
+        }
+        else
+        {
+            var layout = new TreeLayout
+            {
+                Angle = 90,
+                LayerSpacing = 100,
+                NodeSpacing = 50,
+                Arrangement = TreeArrangement.Vertical,
+                Alignment = TreeAlignment.CenterChildren
+            };
+            layout.Apply(_model);
+        }
+    }
+
+    private void AddEmployee()
+    {
+        var selected = _model.GetSelectedNodes().FirstOrDefault();
+        if (selected == null)
+        {
+            // Add to CEO if nothing selected
+            selected = _model.GetNode("1");
+        }
+
+        if (selected != null)
+        {
+            var newEmployee = _model.AddNode($"emp{_employeeCounter}", new Point(0, 0), new EmployeeData
+            {
+                Name = $"Employee {_employeeCounter}",
+                Title = "New Position",
+                Department = "Department"
+            });
+            newEmployee.Size = new Size(180, 90);
+            
+            _model.AddLink(selected, newEmployee);
+            _employeeCounter++;
+            
+            ApplyLayout();
+        }
+    }
+
+    private void RemoveSelected()
+    {
+        var selectedNodes = _model.GetSelectedNodes().ToList();
+        foreach (var node in selectedNodes)
+        {
+            // Don't allow deleting CEO
+            if (node.Id != "1")
+            {
+                _model.RemoveNode(node);
+            }
+        }
+        
+        if (selectedNodes.Any())
+        {
+            ApplyLayout();
+        }
+    }
+
+    public class EmployeeData
+    {
+        public string Name { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string Department { get; set; } = "";
+    }
+}

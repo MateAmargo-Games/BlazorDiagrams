@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    
+    <!-- NuGet Package Metadata -->
+    <PackageId>BlazorDiagrams</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>BlazorDiagrams Contributors</Authors>
+    <Company>BlazorDiagrams</Company>
+    <Product>BlazorDiagrams</Product>
+    <Description>A powerful and fully native Blazor .NET 8 library for creating interactive diagrams, org charts, flowcharts, and hierarchical visualizations using SVG rendering without JavaScript dependencies.</Description>
+    <PackageTags>blazor;diagram;flowchart;orgchart;graph;visualization;svg;tree;hierarchy;network</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/blazor-diagrams/blazor-diagrams</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/blazor-diagrams/blazor-diagrams</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.22" />
+  </ItemGroup>
+
+</Project>

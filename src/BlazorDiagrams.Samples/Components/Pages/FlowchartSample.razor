@@ -1,0 +1,216 @@
+@page "/flowchart"
+@rendermode InteractiveServer
+
+<PageTitle>Flowchart Sample</PageTitle>
+
+<h1>Flowchart Example</h1>
+
+<p>Demonstration of LayeredDigraphLayout (Sugiyama algorithm) for directed graphs and flowcharts.</p>
+
+<div style="margin-bottom: 20px;">
+    <button class="btn btn-primary" @onclick="ApplyLayout">Apply Layout</button>
+    <button class="btn btn-secondary" @onclick="ToggleDirection">Toggle Direction (@_currentDirection)</button>
+    <button class="btn btn-info" @onclick="AddStep">Add Step</button>
+</div>
+
+<div style="border: 1px solid #ddd; border-radius: 5px; overflow: hidden;">
+    <Diagram Model="@_model" 
+             Width="100%" 
+             Height="700px"
+             ShowGrid="true"
+             ShowZoomControls="true"
+             GridSize="20">
+        <NodeTemplate Context="node">
+            <div style="width: 100%; height: 100%; padding: 10px; 
+                        background: @GetNodeColor(node); 
+                        border-radius: @GetNodeBorderRadius(node);
+                        border: 2px solid @(node.IsSelected ? "#007bff" : "#333");
+                        color: white; 
+                        box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        text-align: center;
+                        font-weight: 500;
+                        cursor: pointer;">
+                @if (node.Data is FlowStepData step)
+                {
+                    <span>@step.Label</span>
+                }
+            </div>
+        </NodeTemplate>
+    </Diagram>
+</div>
+
+@code {
+    private DiagramModel _model = new();
+    private LayoutDirection _currentDirection = LayoutDirection.Down;
+    private int _stepCounter = 7;
+
+    protected override void OnInitialized()
+    {
+        InitializeFlowchart();
+    }
+
+    private void InitializeFlowchart()
+    {
+        // Start node
+        var start = _model.AddNode("start", new Point(100, 50), new FlowStepData
+        {
+            Label = "Start",
+            Type = FlowStepType.Start
+        });
+        start.Size = new Size(120, 60);
+
+        // Process nodes
+        var input = _model.AddNode("input", new Point(100, 150), new FlowStepData
+        {
+            Label = "Get Input",
+            Type = FlowStepType.Process
+        });
+        input.Size = new Size(140, 60);
+
+        var validate = _model.AddNode("validate", new Point(100, 250), new FlowStepData
+        {
+            Label = "Validate Data",
+            Type = FlowStepType.Process
+        });
+        validate.Size = new Size(140, 60);
+
+        // Decision
+        var decision = _model.AddNode("decision", new Point(100, 350), new FlowStepData
+        {
+            Label = "Is Valid?",
+            Type = FlowStepType.Decision
+        });
+        decision.Size = new Size(120, 80);
+
+        // Process branches
+        var process = _model.AddNode("process", new Point(250, 450), new FlowStepData
+        {
+            Label = "Process",
+            Type = FlowStepType.Process
+        });
+        process.Size = new Size(140, 60);
+
+        var error = _model.AddNode("error", new Point(50, 450), new FlowStepData
+        {
+            Label = "Show Error",
+            Type = FlowStepType.Process
+        });
+        error.Size = new Size(140, 60);
+
+        // End node
+        var end = _model.AddNode("end", new Point(100, 550), new FlowStepData
+        {
+            Label = "End",
+            Type = FlowStepType.End
+        });
+        end.Size = new Size(120, 60);
+
+        // Create links
+        _model.AddLink(start, input);
+        _model.AddLink(input, validate);
+        _model.AddLink(validate, decision);
+        
+        var yesLink = _model.AddLink(decision, process);
+        yesLink.Label = "Yes";
+        
+        var noLink = _model.AddLink(decision, error);
+        noLink.Label = "No";
+        
+        _model.AddLink(process, end);
+        _model.AddLink(error, input);
+
+        ApplyLayout();
+    }
+
+    private void ApplyLayout()
+    {
+        var layout = new LayeredDigraphLayout
+        {
+            Direction = _currentDirection,
+            LayerSpacing = 80,
+            NodeSpacing = 60
+        };
+
+        layout.Apply(_model);
+    }
+
+    private void ToggleDirection()
+    {
+        _currentDirection = _currentDirection switch
+        {
+            LayoutDirection.Down => LayoutDirection.Right,
+            LayoutDirection.Right => LayoutDirection.Up,
+            LayoutDirection.Up => LayoutDirection.Left,
+            _ => LayoutDirection.Down
+        };
+
+        ApplyLayout();
+    }
+
+    private void AddStep()
+    {
+        var selected = _model.GetSelectedNodes().FirstOrDefault();
+        if (selected == null) return;
+
+        var newStep = _model.AddNode($"step{_stepCounter}", new Point(0, 0), new FlowStepData
+        {
+            Label = $"Step {_stepCounter}",
+            Type = FlowStepType.Process
+        });
+        newStep.Size = new Size(140, 60);
+        
+        _model.AddLink(selected, newStep);
+        _stepCounter++;
+        
+        ApplyLayout();
+    }
+
+    private string GetNodeColor(Node node)
+    {
+        if (node.Data is FlowStepData step)
+        {
+            return step.Type switch
+            {
+                FlowStepType.Start => "#28a745",
+                FlowStepType.End => "#dc3545",
+                FlowStepType.Decision => "#ffc107",
+                FlowStepType.Process => "#007bff",
+                _ => "#6c757d"
+            };
+        }
+        return "#6c757d";
+    }
+
+    private string GetNodeBorderRadius(Node node)
+    {
+        if (node.Data is FlowStepData step)
+        {
+            return step.Type switch
+            {
+                FlowStepType.Start or FlowStepType.End => "30px",
+                FlowStepType.Decision => "5px",
+                _ => "8px"
+            };
+        }
+        return "8px";
+    }
+
+    public class FlowStepData
+    {
+        public string Label { get; set; } = "";
+        public FlowStepType Type { get; set; }
+    }
+
+    public enum FlowStepType
+    {
+        Start,
+        End,
+        Process,
+        Decision
+    }
+}
+
+
