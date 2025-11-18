@@ -1,5 +1,6 @@
 @page "/flowchart"
 @rendermode InteractiveServer
+@using BlazorDiagrams.Core.Interaction
 
 <PageTitle>Flowchart Sample</PageTitle>
 
@@ -19,7 +20,8 @@
              Height="700px"
              ShowGrid="true"
              ShowZoomControls="true"
-             GridSize="20">
+             GridSize="20"
+             ContextMenuConfig="@_contextMenuConfig">
         <NodeTemplate Context="node">
             <div style="width: 100%; height: 100%; padding: 10px; 
                         background: @GetNodeColor(node); 
@@ -46,10 +48,89 @@
     private DiagramModel _model = new();
     private LayoutDirection _currentDirection = LayoutDirection.Down;
     private int _stepCounter = 7;
+    private ContextMenuConfig _contextMenuConfig = null!;
 
     protected override void OnInitialized()
     {
+        InitializeContextMenu();
         InitializeFlowchart();
+    }
+    
+    private void InitializeContextMenu()
+    {
+        _contextMenuConfig = new ContextMenuConfig
+        {
+            Theme = ContextMenuTheme.Light,
+            NodeMenuItems = node => new List<ContextMenuItem>
+            {
+                new ContextMenuItem
+                {
+                    Label = "Change Type",
+                    Icon = "🔄",
+                    IconType = ContextMenuIconType.Emoji,
+                    SubItems = new List<ContextMenuItem>
+                    {
+                        new ContextMenuItem
+                        {
+                            Label = "Process",
+                            Icon = "⚙️",
+                            IconType = ContextMenuIconType.Emoji,
+                            Action = _ => ChangeNodeType(node, FlowStepType.Process)
+                        },
+                        new ContextMenuItem
+                        {
+                            Label = "Decision",
+                            Icon = "❓",
+                            IconType = ContextMenuIconType.Emoji,
+                            Action = _ => ChangeNodeType(node, FlowStepType.Decision)
+                        }
+                    }
+                },
+                new ContextMenuItem { IsSeparator = true },
+                new ContextMenuItem
+                {
+                    Label = "Duplicate",
+                    Icon = "📋",
+                    IconType = ContextMenuIconType.Emoji,
+                    Shortcut = "Ctrl+D",
+                    Action = _ => DuplicateNode(node)
+                },
+                new ContextMenuItem
+                {
+                    Label = "Delete",
+                    Icon = "🗑️",
+                    IconType = ContextMenuIconType.Emoji,
+                    Shortcut = "Del",
+                    Action = _ => _model.RemoveNode(node),
+                    ShouldDisplay = _ => node.Id != "start" && node.Id != "end"
+                }
+            },
+            CanvasMenuItems = model => new List<ContextMenuItem>
+            {
+                new ContextMenuItem
+                {
+                    Label = "Add Process",
+                    Icon = "➕",
+                    IconType = ContextMenuIconType.Emoji,
+                    Action = _ => AddNewNode(FlowStepType.Process)
+                },
+                new ContextMenuItem
+                {
+                    Label = "Add Decision",
+                    Icon = "❓",
+                    IconType = ContextMenuIconType.Emoji,
+                    Action = _ => AddNewNode(FlowStepType.Decision)
+                },
+                new ContextMenuItem { IsSeparator = true },
+                new ContextMenuItem
+                {
+                    Label = "Fit to Screen",
+                    Icon = "⊡",
+                    IconType = ContextMenuIconType.Emoji,
+                    Action = _ => { /* Would call ZoomToFit */ }
+                }
+            }
+        };
     }
 
     private void InitializeFlowchart()
@@ -210,6 +291,41 @@
         End,
         Process,
         Decision
+    }
+    
+    private void ChangeNodeType(Node node, FlowStepType newType)
+    {
+        if (node.Data is FlowStepData step)
+        {
+            step.Type = newType;
+            StateHasChanged();
+        }
+    }
+    
+    private void DuplicateNode(Node node)
+    {
+        if (node.Data is FlowStepData step)
+        {
+            var newNode = _model.AddNode($"step{_stepCounter}", new Point(node.Position.X + 100, node.Position.Y + 100), new FlowStepData
+            {
+                Label = $"{step.Label} (copy)",
+                Type = step.Type
+            });
+            newNode.Size = node.Size;
+            _stepCounter++;
+            ApplyLayout();
+        }
+    }
+    
+    private void AddNewNode(FlowStepType type)
+    {
+        var newNode = _model.AddNode($"step{_stepCounter}", new Point(200, 200), new FlowStepData
+        {
+            Label = $"New {type}",
+            Type = type
+        });
+        newNode.Size = new Size(140, 60);
+        _stepCounter++;
     }
 }
 

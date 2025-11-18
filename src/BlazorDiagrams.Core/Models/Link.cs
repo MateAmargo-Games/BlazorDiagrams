@@ -1,4 +1,5 @@
 using BlazorDiagrams.Core.Geometry;
+using BlazorDiagrams.Core.Styling;
 
 namespace BlazorDiagrams.Core.Models;
 
@@ -19,6 +20,7 @@ public class Link : GraphObject
     private ArrowheadStyle _arrowheadStyle = ArrowheadStyle.Standard;
     private List<Point> _routePoints = new();
     private string? _label;
+    private LinkStyleConfig? _styleConfig;
     
     /// <summary>
     /// Source node of the link
@@ -146,6 +148,15 @@ public class Link : GraphObject
     {
         get => _label;
         set => SetProperty(ref _label, value);
+    }
+    
+    /// <summary>
+    /// Custom style configuration for this link (overrides theme defaults)
+    /// </summary>
+    public LinkStyleConfig? StyleConfig
+    {
+        get => _styleConfig;
+        set => SetProperty(ref _styleConfig, value);
     }
     
     /// <summary>

@@ -54,6 +54,11 @@ public class ContextMenuEventArgs : EventArgs
 public class ContextMenuItem
 {
     /// <summary>
+    /// Unique identifier for the menu item
+    /// </summary>
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    
+    /// <summary>
     /// Label of the menu item
     /// </summary>
     public string Label { get; set; } = "";
@@ -79,9 +84,44 @@ public class ContextMenuItem
     public string? Icon { get; set; }
     
     /// <summary>
+    /// Icon type (css, emoji, svg)
+    /// </summary>
+    public ContextMenuIconType IconType { get; set; } = ContextMenuIconType.Emoji;
+    
+    /// <summary>
     /// Submenu items
     /// </summary>
     public List<ContextMenuItem>? SubItems { get; set; }
+    
+    /// <summary>
+    /// Shortcut key combination to display
+    /// </summary>
+    public string? Shortcut { get; set; }
+    
+    /// <summary>
+    /// Custom CSS class for the item
+    /// </summary>
+    public string? CssClass { get; set; }
+    
+    /// <summary>
+    /// Whether this item is checked (for toggle items)
+    /// </summary>
+    public bool IsChecked { get; set; }
+    
+    /// <summary>
+    /// Function to determine if item should be visible
+    /// </summary>
+    public Func<object?, bool>? ShouldDisplay { get; set; }
+}
+
+/// <summary>
+/// Icon type for context menu items
+/// </summary>
+public enum ContextMenuIconType
+{
+    Css,
+    Emoji,
+    Svg
 }
 
 /// <summary>

@@ -2,6 +2,29 @@
 
 window.BlazorDiagrams = {
     /**
+     * Gets the mouse position relative to an SVG element
+     * @param {MouseEvent} event - The mouse event
+     * @param {HTMLElement} svgElement - The SVG element
+     * @returns {Object} An object with x and y coordinates
+     */
+    getMousePositionInSvg: function (event, svgElement) {
+        const rect = svgElement.getBoundingClientRect();
+        return {
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top
+        };
+    },
+
+    /**
+     * Gets the bounding rectangle of an SVG element
+     * @param {HTMLElement} element - The element to measure
+     * @returns {DOMRect} The bounding rectangle
+     */
+    getSvgElementRect: function (element) {
+        return element.getBoundingClientRect();
+    },
+
+    /**
      * Exports an SVG to PNG format
      * @param {string} svgContent - The SVG content as a string
      * @param {number} width - The desired width of the PNG

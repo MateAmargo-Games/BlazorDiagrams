@@ -1,0 +1,191 @@
+@using BlazorDiagrams.Core.Models
+@using BlazorDiagrams.Core.Geometry
+@namespace BlazorDiagrams.Core.Components
+
+@if (Node != null && Node.Actions.Any())
+{
+    var visibleActions = Node.Actions
+        .Where(a => ShouldShowAction(a))
+        .OrderBy(a => a.Order)
+        .ToList();
+    
+    @foreach (var action in visibleActions)
+    {
+        var position = GetActionPosition(action);
+        var style = GetActionStyle(action, position);
+        
+        <div class="node-action @action.CssClass @(action.IsEnabled ? "" : "disabled")"
+             style="@style"
+             @onclick="@(e => HandleActionClick(action))"
+             @onclick:stopPropagation="true"
+             title="@action.Tooltip">
+            
+            @if (action.CustomContent != null)
+            {
+                @action.CustomContent(action)
+            }
+            else if (!string.IsNullOrEmpty(action.Icon))
+            {
+                @if (action.IconType == NodeActionIconType.Emoji)
+                {
+                    <span class="action-icon">@action.Icon</span>
+                }
+                else if (action.IconType == NodeActionIconType.Css)
+                {
+                    <i class="@action.Icon action-icon"></i>
+                }
+                else if (action.IconType == NodeActionIconType.Svg)
+                {
+                    <svg class="action-icon" viewBox="0 0 24 24">
+                        <path d="@action.Icon" fill="currentColor"/>
+                    </svg>
+                }
+            }
+            
+            @if (!string.IsNullOrEmpty(action.Label))
+            {
+                <span class="action-label">@action.Label</span>
+            }
+        </div>
+    }
+}
+
+<style>
+    .node-action {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        min-width: 32px;
+        min-height: 32px;
+        padding: 4px 8px;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        transition: all 0.2s ease;
+        z-index: 100;
+        pointer-events: all;
+        user-select: none;
+        backdrop-filter: blur(4px);
+    }
+    
+    .node-action:hover {
+        background: #f0f0f0;
+        border-color: #999;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        transform: translateY(-1px);
+    }
+    
+    .node-action:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    .node-action.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    
+    .action-icon {
+        display: inline-block;
+        font-size: 16px;
+        line-height: 1;
+    }
+    
+    .action-icon svg {
+        width: 16px;
+        height: 16px;
+        display: block;
+    }
+    
+    .action-label {
+        font-size: 12px;
+        white-space: nowrap;
+    }
+</style>
+
+@code {
+    [Parameter] public Node? Node { get; set; }
+    [Parameter] public bool IsHovered { get; set; }
+    [Parameter] public EventCallback<NodeAction> OnActionClick { get; set; }
+    
+    private bool ShouldShowAction(NodeAction action)
+    {
+        if (Node == null) return false;
+        
+        // Check custom visibility function first
+        if (action.ShouldDisplay != null)
+        {
+            return action.ShouldDisplay(Node);
+        }
+        
+        // Check visibility mode
+        return action.Visibility switch
+        {
+            NodeActionVisibility.Always => true,
+            NodeActionVisibility.OnHover => IsHovered,
+            NodeActionVisibility.OnSelected => Node.IsSelected,
+            NodeActionVisibility.OnHoverOrSelected => IsHovered || Node.IsSelected,
+            _ => true
+        };
+    }
+    
+    private (double X, double Y) GetActionPosition(NodeAction action)
+    {
+        if (Node == null) return (0, 0);
+        
+        const double offset = 4; // Small offset from node edge
+        
+        return action.Position switch
+        {
+            NodeActionPosition.TopLeft => (offset, offset),
+            NodeActionPosition.TopCenter => (Node.Size.Width / 2 - 16, offset),
+            NodeActionPosition.TopRight => (Node.Size.Width - 32 - offset, offset),
+            NodeActionPosition.MiddleLeft => (offset, Node.Size.Height / 2 - 16),
+            NodeActionPosition.Center => (Node.Size.Width / 2 - 16, Node.Size.Height / 2 - 16),
+            NodeActionPosition.MiddleRight => (Node.Size.Width - 32 - offset, Node.Size.Height / 2 - 16),
+            NodeActionPosition.BottomLeft => (offset, Node.Size.Height - 32 - offset),
+            NodeActionPosition.BottomCenter => (Node.Size.Width / 2 - 16, Node.Size.Height - 32 - offset),
+            NodeActionPosition.BottomRight => (Node.Size.Width - 32 - offset, Node.Size.Height - 32 - offset),
+            _ => (Node.Size.Width - 32 - offset, offset)
+        };
+    }
+    
+    private string GetActionStyle(NodeAction action, (double X, double Y) position)
+    {
+        var styles = new List<string>
+        {
+            $"left: {position.X:F2}px",
+            $"top: {position.Y:F2}px"
+        };
+        
+        if (!string.IsNullOrEmpty(action.BackgroundColor))
+        {
+            styles.Add($"background: {action.BackgroundColor}");
+        }
+        
+        if (!string.IsNullOrEmpty(action.ForegroundColor))
+        {
+            styles.Add($"color: {action.ForegroundColor}");
+        }
+        
+        return string.Join("; ", styles);
+    }
+    
+    private async Task HandleActionClick(NodeAction action)
+    {
+        if (!action.IsEnabled || Node == null) return;
+        
+        // Invoke the action's callback
+        action.OnClick?.Invoke(Node);
+        
+        // Notify parent component
+        await OnActionClick.InvokeAsync(action);
+    }
+}
+

@@ -22,9 +22,11 @@ A powerful and fully native Blazor .NET 8 library for creating interactive diagr
 - **Export**: SVG and JSON export capabilities
 
 ### Interaction Features
-- **Drag & Drop**: Move nodes with mouse or touch
+- **Drag & Drop**: Move nodes with mouse or touch (improved accuracy with JS interop)
 - **Zoom & Pan**: Navigate large diagrams easily
 - **Selection**: Single and multi-select with Ctrl/Shift
+- **Node Actions**: Interactive buttons within nodes (edit, delete, custom actions)
+- **Context Menus**: Right-click menus for nodes, links, and canvas
 - **Keyboard**: Standard keyboard shortcuts
 - **Touch Support**: Works on mobile and tablet devices
 
@@ -273,6 +275,177 @@ Represents a connection between nodes.
 - `double StrokeWidth` - Link width
 - `bool ShowArrowhead` - Whether to show arrowhead
 - `string? Label` - Optional label text
+
+## Advanced Features
+
+### Node Actions
+
+Node actions are interactive buttons that can be displayed on nodes. They support:
+
+- Multiple positioning options (TopLeft, TopRight, BottomCenter, etc.)
+- Visibility modes (Always, OnHover, OnSelected, OnHoverOrSelected)
+- Custom icons (emoji, CSS classes, SVG paths)
+- Tooltips
+- Enable/disable states
+- Custom styling
+
+**Example:**
+
+```csharp
+// Add actions to a node
+node.AddAction("✏️", n => EditNode(n), "Edit", NodeActionPosition.TopRight);
+node.AddAction("🗑️", n => DeleteNode(n), "Delete", NodeActionPosition.TopLeft);
+
+// Configure action visibility
+var action = new NodeAction
+{
+    Icon = "ℹ️",
+    Tooltip = "Information",
+    Visibility = NodeActionVisibility.OnHover,
+    Position = NodeActionPosition.BottomCenter,
+    OnClick = node => ShowInfo(node)
+};
+node.AddAction(action);
+```
+
+### Context Menus
+
+Fully customizable context menus for nodes, links, and canvas:
+
+**Features:**
+- Hierarchical submenus
+- Icons and shortcuts
+- Separators
+- Conditional visibility
+- Custom styling and themes
+- Enable/disable states
+
+**Example:**
+
+```csharp
+var config = new ContextMenuConfig
+{
+    Theme = ContextMenuTheme.Dark,
+    NodeMenuItems = node => new List<ContextMenuItem>
+    {
+        new ContextMenuItem
+        {
+            Label = "Edit",
+            Icon = "✏️",
+            Shortcut = "E",
+            Action = _ => EditNode(node)
+        },
+        new ContextMenuItem
+        {
+            Label = "Style",
+            Icon = "🎨",
+            SubItems = new List<ContextMenuItem>
+            {
+                new ContextMenuItem { Label = "Red", Action = _ => ChangeColor(node, "red") },
+                new ContextMenuItem { Label = "Blue", Action = _ => ChangeColor(node, "blue") }
+            }
+        },
+        new ContextMenuItem { IsSeparator = true },
+        new ContextMenuItem
+        {
+            Label = "Delete",
+            Icon = "🗑️",
+            Action = _ => model.RemoveNode(node)
+        }
+    }
+};
+```
+
+### Theming System
+
+BlazorDiagrams includes a comprehensive theming system:
+
+**Built-in Themes:**
+- **Light**: Clean white background with subtle grid
+- **Dark**: Dark background for reduced eye strain
+- **Blueprint**: Technical blueprint style
+
+**Customization Options:**
+- Background and grid colors
+- Default node and link styles
+- Selected/hovered states
+- Font families and sizes
+- Shadows, gradients, and effects
+
+**Example:**
+
+```csharp
+// Use built-in theme
+model.Theme = DiagramTheme.Dark;
+
+// Create custom theme
+model.Theme = new DiagramTheme
+{
+    Name = "Ocean",
+    BackgroundColor = "#e3f2fd",
+    GridColor = "#90caf9",
+    GridStyle = GridStyle.Dots,
+    DefaultNodeStyle = new NodeStyleConfig
+    {
+        FillColor = "#ffffff",
+        StrokeColor = "#1976d2",
+        StrokeWidth = 2,
+        Shape = NodeShape.RoundedRectangle,
+        CornerRadius = 8,
+        ShadowColor = "rgba(0,0,0,0.1)",
+        ShadowBlur = 4
+    },
+    DefaultLinkStyle = new LinkStyleConfig
+    {
+        StrokeColor = "#1976d2",
+        StrokeWidth = 2,
+        ShowArrowhead = true
+    }
+};
+```
+
+### Style Configuration
+
+Nodes and links support extensive style customization:
+
+**Node Styles:**
+- Shapes: Rectangle, RoundedRectangle, Circle, Ellipse, Diamond, Triangle, Hexagon
+- Fill patterns: Solid, Gradient, Striped, Dotted
+- Borders: Color, width, dash patterns
+- Shadows: Color, blur, offset
+- Typography: Font family, size, weight, color
+
+**Link Styles:**
+- Line styles: Solid, dashed, dotted
+- Arrowhead styles: Filled, Open, Diamond, Circle, Square
+- Line caps and joins
+- Shadows and effects
+- Label styling
+
+**Example:**
+
+```csharp
+// Apply custom style to a node
+node.StyleConfig = new NodeStyleConfig
+{
+    Shape = NodeShape.RoundedRectangle,
+    FillPattern = FillPattern.Gradient,
+    GradientStartColor = "#667eea",
+    GradientEndColor = "#764ba2",
+    CornerRadius = 12,
+    ShadowColor = "rgba(0,0,0,0.3)",
+    ShadowBlur = 10
+};
+
+// Apply custom style to a link
+link.StyleConfig = new LinkStyleConfig
+{
+    StrokeColor = "#e91e63",
+    StrokeWidth = 3,
+    StrokeDashArray = "5,5",
+    ArrowheadStyle = ArrowheadStyle.Filled
+};
+```
 
 ## Browser Support
 

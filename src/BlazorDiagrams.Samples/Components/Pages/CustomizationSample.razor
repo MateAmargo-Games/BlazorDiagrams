@@ -1,0 +1,336 @@
+@page "/customization"
+@rendermode InteractiveServer
+@using BlazorDiagrams.Core.Interaction
+@using BlazorDiagrams.Core.Styling
+
+<PageTitle>Customization Sample</PageTitle>
+
+<h1>Customization & Theming Example</h1>
+
+<p>Demonstration of all customization features: themes, node actions, context menus, and advanced styling.</p>
+
+<div style="margin-bottom: 20px;">
+    <div class="btn-group mb-3" role="group">
+        <button class="btn @(_selectedTheme == "Light" ? "btn-primary" : "btn-outline-primary")" @onclick="@(() => ApplyTheme("Light"))">Light Theme</button>
+        <button class="btn @(_selectedTheme == "Dark" ? "btn-primary" : "btn-outline-primary")" @onclick="@(() => ApplyTheme("Dark"))">Dark Theme</button>
+        <button class="btn @(_selectedTheme == "Blueprint" ? "btn-primary" : "btn-outline-primary")" @onclick="@(() => ApplyTheme("Blueprint"))">Blueprint Theme</button>
+    </div>
+    <div>
+        <button class="btn btn-success" @onclick="AddCustomNode">Add Custom Node</button>
+        <button class="btn btn-info" @onclick="ToggleActions">@(_showActions ? "Hide" : "Show") Actions</button>
+    </div>
+</div>
+
+<div style="border: 1px solid #ddd; border-radius: 5px; overflow: hidden;">
+    <Diagram Model="@_model" 
+             Width="100%" 
+             Height="700px"
+             ShowGrid="true"
+             ShowZoomControls="true"
+             GridSize="@_model.Theme.GridSize"
+             BackgroundColor="@_model.Theme.BackgroundColor"
+             ContextMenuConfig="@_contextMenuConfig">
+        <NodeTemplate Context="node">
+            <div style="width: 100%; height: 100%; padding: 15px; 
+                        background: @GetNodeBackground(node); 
+                        border-radius: 8px;
+                        border: 2px solid @(node.IsSelected ? "#007bff" : "#555");
+                        color: @GetNodeTextColor(node);
+                        box-shadow: @(node.IsSelected ? "0 0 10px rgba(0,123,255,0.5)" : "0 2px 4px rgba(0,0,0,0.1)");
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                        cursor: pointer;
+                        transition: all 0.3s ease;">
+                @if (node.Data is CustomNodeData data)
+                {
+                    <div style="font-size: 24px; margin-bottom: 8px;">@data.Icon</div>
+                    <div style="font-weight: bold; font-size: 16px; margin-bottom: 4px;">@data.Title</div>
+                    <div style="font-size: 12px; opacity: 0.9;">@data.Description</div>
+                }
+            </div>
+        </NodeTemplate>
+    </Diagram>
+</div>
+
+<div class="mt-3 alert alert-info">
+    <h5>Features Demonstrated:</h5>
+    <ul>
+        <li><strong>Themes:</strong> Switch between Light, Dark, and Blueprint themes</li>
+        <li><strong>Node Actions:</strong> Hover over nodes to see edit, delete, and info buttons</li>
+        <li><strong>Context Menu:</strong> Right-click on nodes or canvas for contextual options</li>
+        <li><strong>Custom Styling:</strong> Each node has unique colors and styles</li>
+        <li><strong>Drag & Drop:</strong> All nodes are draggable with smooth movement</li>
+    </ul>
+</div>
+
+@code {
+    private DiagramModel _model = new();
+    private ContextMenuConfig _contextMenuConfig = null!;
+    private string _selectedTheme = "Light";
+    private bool _showActions = true;
+    private int _nodeCounter = 5;
+    private readonly Random _random = new();
+
+    protected override void OnInitialized()
+    {
+        InitializeContextMenu();
+        InitializeDiagram();
+    }
+
+    private void InitializeContextMenu()
+    {
+        _contextMenuConfig = new ContextMenuConfig
+        {
+            Theme = ContextMenuTheme.Light,
+            NodeMenuItems = node => new List<ContextMenuItem>
+            {
+                new ContextMenuItem
+                {
+                    Label = "Edit",
+                    Icon = "✏️",
+                    IconType = ContextMenuIconType.Emoji,
+                    Shortcut = "E",
+                    Action = _ => EditNode(node)
+                },
+                new ContextMenuItem
+                {
+                    Label = "Duplicate",
+                    Icon = "📋",
+                    IconType = ContextMenuIconType.Emoji,
+                    Shortcut = "Ctrl+D",
+                    Action = _ => DuplicateNode(node)
+                },
+                new ContextMenuItem
+                {
+                    Label = "Change Style",
+                    Icon = "🎨",
+                    IconType = ContextMenuIconType.Emoji,
+                    SubItems = new List<ContextMenuItem>
+                    {
+                        new ContextMenuItem { Label = "Success", Icon = "✅", IconType = ContextMenuIconType.Emoji, Action = _ => ChangeNodeStyle(node, "success") },
+                        new ContextMenuItem { Label = "Warning", Icon = "⚠️", IconType = ContextMenuIconType.Emoji, Action = _ => ChangeNodeStyle(node, "warning") },
+                        new ContextMenuItem { Label = "Danger", Icon = "❌", IconType = ContextMenuIconType.Emoji, Action = _ => ChangeNodeStyle(node, "danger") }
+                    }
+                },
+                new ContextMenuItem { IsSeparator = true },
+                new ContextMenuItem
+                {
+                    Label = "Delete",
+                    Icon = "🗑️",
+                    IconType = ContextMenuIconType.Emoji,
+                    Shortcut = "Del",
+                    Action = _ => _model.RemoveNode(node)
+                }
+            },
+            CanvasMenuItems = model => new List<ContextMenuItem>
+            {
+                new ContextMenuItem
+                {
+                    Label = "Add Node",
+                    Icon = "➕",
+                    IconType = ContextMenuIconType.Emoji,
+                    Action = _ => AddCustomNode()
+                },
+                new ContextMenuItem { IsSeparator = true },
+                new ContextMenuItem
+                {
+                    Label = "Fit to Screen",
+                    Icon = "⊡",
+                    IconType = ContextMenuIconType.Emoji,
+                    Action = _ => { /* Would call ZoomToFit */ }
+                },
+                new ContextMenuItem
+                {
+                    Label = "Reset Zoom",
+                    Icon = "🔄",
+                    IconType = ContextMenuIconType.Emoji,
+                    Action = _ => { model.Zoom = 1.0; model.PanOffset = Point.Zero; }
+                }
+            }
+        };
+    }
+
+    private void InitializeDiagram()
+    {
+        // Create sample nodes with different styles
+        var node1 = _model.AddNode("1", new Point(100, 100), new CustomNodeData
+        {
+            Icon = "🎯",
+            Title = "Goal",
+            Description = "Main objective",
+            Category = "success"
+        });
+        node1.Size = new Size(150, 120);
+        AddNodeActions(node1);
+
+        var node2 = _model.AddNode("2", new Point(350, 100), new CustomNodeData
+        {
+            Icon = "⚙️",
+            Title = "Process",
+            Description = "Core workflow",
+            Category = "info"
+        });
+        node2.Size = new Size(150, 120);
+        AddNodeActions(node2);
+
+        var node3 = _model.AddNode("3", new Point(600, 100), new CustomNodeData
+        {
+            Icon = "✅",
+            Title = "Complete",
+            Description = "Final step",
+            Category = "success"
+        });
+        node3.Size = new Size(150, 120);
+        AddNodeActions(node3);
+
+        var node4 = _model.AddNode("4", new Point(225, 300), new CustomNodeData
+        {
+            Icon = "⚠️",
+            Title = "Warning",
+            Description = "Needs attention",
+            Category = "warning"
+        });
+        node4.Size = new Size(150, 120);
+        AddNodeActions(node4);
+
+        // Create links
+        _model.AddLink(node1, node2);
+        _model.AddLink(node2, node3);
+        _model.AddLink(node2, node4);
+    }
+
+    private void AddNodeActions(Node node)
+    {
+        if (!_showActions) return;
+
+        // Edit action
+        node.AddAction("✏️", n => EditNode(n), "Edit", NodeActionPosition.TopRight);
+
+        // Delete action
+        node.AddAction("🗑️", n => _model.RemoveNode(n), "Delete", NodeActionPosition.TopLeft);
+
+        // Info action
+        node.AddAction("ℹ️", n =>
+        {
+            if (n.Data is CustomNodeData data)
+            {
+                // In a real app, would show a dialog
+                data.Description = $"{data.Description} (viewed)";
+                StateHasChanged();
+            }
+        }, "Info", NodeActionPosition.BottomCenter);
+    }
+
+    private void ApplyTheme(string themeName)
+    {
+        _selectedTheme = themeName;
+        _model.Theme = themeName switch
+        {
+            "Dark" => DiagramTheme.Dark,
+            "Blueprint" => DiagramTheme.Blueprint,
+            _ => DiagramTheme.Light
+        };
+        
+        // Update context menu theme
+        _contextMenuConfig.Theme = themeName == "Dark" ? ContextMenuTheme.Dark : ContextMenuTheme.Light;
+        
+        StateHasChanged();
+    }
+
+    private void AddCustomNode()
+    {
+        var categories = new[] { "success", "info", "warning", "danger" };
+        var icons = new[] { "🎯", "⚙️", "✅", "⚠️", "❌", "📊", "💡", "🔔" };
+        
+        var node = _model.AddNode($"node{_nodeCounter}", new Point(_random.Next(100, 600), _random.Next(100, 500)), new CustomNodeData
+        {
+            Icon = icons[_random.Next(icons.Length)],
+            Title = $"Node {_nodeCounter}",
+            Description = "Custom node",
+            Category = categories[_random.Next(categories.Length)]
+        });
+        node.Size = new Size(150, 120);
+        AddNodeActions(node);
+        _nodeCounter++;
+    }
+
+    private void EditNode(Node node)
+    {
+        if (node.Data is CustomNodeData data)
+        {
+            data.Title = $"{data.Title} (edited)";
+            StateHasChanged();
+        }
+    }
+
+    private void DuplicateNode(Node node)
+    {
+        if (node.Data is CustomNodeData data)
+        {
+            var newNode = _model.AddNode($"node{_nodeCounter}", new Point(node.Position.X + 50, node.Position.Y + 50), new CustomNodeData
+            {
+                Icon = data.Icon,
+                Title = $"{data.Title} (copy)",
+                Description = data.Description,
+                Category = data.Category
+            });
+            newNode.Size = node.Size;
+            AddNodeActions(newNode);
+            _nodeCounter++;
+        }
+    }
+
+    private void ChangeNodeStyle(Node node, string category)
+    {
+        if (node.Data is CustomNodeData data)
+        {
+            data.Category = category;
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleActions()
+    {
+        _showActions = !_showActions;
+        foreach (var node in _model.Nodes)
+        {
+            node.ClearActions();
+            if (_showActions)
+            {
+                AddNodeActions(node);
+            }
+        }
+        StateHasChanged();
+    }
+
+    private string GetNodeBackground(Node node)
+    {
+        if (node.Data is CustomNodeData data)
+        {
+            return data.Category switch
+            {
+                "success" => "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+                "warning" => "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+                "danger" => "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+                _ => "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
+            };
+        }
+        return "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+    }
+
+    private string GetNodeTextColor(Node node)
+    {
+        return _model.Theme.Name == "Dark" || _model.Theme.Name == "Blueprint" ? "#ffffff" : "#333333";
+    }
+
+    public class CustomNodeData
+    {
+        public string Icon { get; set; } = "📦";
+        public string Title { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string Category { get; set; } = "info";
+    }
+}
+

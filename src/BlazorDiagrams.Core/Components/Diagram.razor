@@ -1,6 +1,7 @@
 @using BlazorDiagrams.Core.Models
 @using BlazorDiagrams.Core.Geometry
 @using BlazorDiagrams.Core.Rendering
+@using BlazorDiagrams.Core.Interaction
 @using Microsoft.AspNetCore.Components.Web
 @namespace BlazorDiagrams.Core.Components
 
@@ -15,6 +16,9 @@
          @onmouseup="OnMouseUp"
          @onwheel="OnWheel"
          @onwheel:preventDefault="true"
+         @oncontextmenu="OnCanvasContextMenu"
+         @oncontextmenu:preventDefault="true"
+         @onclick="@(() => _contextMenuVisible = false)"
          style="cursor: @GetCursor();">
         
         @if (Model != null)
@@ -55,9 +59,22 @@
                             <foreignObject width="@node.Size.Width.ToString("F2")" 
                                          height="@node.Size.Height.ToString("F2")"
                                          @onmousedown="@(e => OnNodeMouseDown(e, node))"
-                                         @onmousedown:stopPropagation="true">
-                                <div style="width: 100%; height: 100%; pointer-events: all;">
-                                    @NodeTemplate(node)
+                                         @onmousedown:stopPropagation="true"
+                                         @onmouseenter="@(() => _hoveredNode = node)"
+                                         @onmouseleave="@(() => { if (_hoveredNode == node) _hoveredNode = null; })"
+                                         @oncontextmenu="@(e => OnNodeContextMenu(e, node))"
+                                         @oncontextmenu:preventDefault="true"
+                                         @oncontextmenu:stopPropagation="true">
+                                <div style="width: 100%; height: 100%; position: relative;">
+                                    <div style="width: 100%; height: 100%; pointer-events: all;">
+                                        @NodeTemplate(node)
+                                    </div>
+                                    @if (node.Actions.Any())
+                                    {
+                                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+                                            <NodeActionsOverlay Node="@node" IsHovered="@(_hoveredNode == node)" />
+                                        </div>
+                                    }
                                 </div>
                             </foreignObject>
                         </g>
@@ -67,7 +84,12 @@
                         <!-- Default SVG node rendering -->
                         <g @key="node.Id" 
                            @onmousedown="@(e => OnNodeMouseDown(e, node))"
-                           @onmousedown:stopPropagation="true">
+                           @onmousedown:stopPropagation="true"
+                           @onmouseenter="@(() => _hoveredNode = node)"
+                           @onmouseleave="@(() => { if (_hoveredNode == node) _hoveredNode = null; })"
+                           @oncontextmenu="@(e => OnNodeContextMenu(e, node))"
+                           @oncontextmenu:preventDefault="true"
+                           @oncontextmenu:stopPropagation="true">
                             @((MarkupString)_renderer.RenderNode(node))
                         </g>
                     }
@@ -98,6 +120,16 @@
             <button @onclick="ZoomToFit" class="diagram-zoom-button" title="Zoom to Fit">⊡</button>
             <button @onclick="ResetZoom" class="diagram-zoom-button" title="Reset Zoom">1:1</button>
         </div>
+    }
+    
+    @if (ContextMenuConfig != null)
+    {
+        <ContextMenu IsVisible="@_contextMenuVisible"
+                     Position="@_contextMenuPosition"
+                     MenuItems="@_contextMenuItems"
+                     Config="@ContextMenuConfig"
+                     Target="@_contextMenuTarget"
+                     OnClose="@CloseContextMenu" />
     }
 </div>
 
@@ -153,11 +185,18 @@
     private bool _isDraggingNode;
     private bool _isSelectingRect;
     private Point? _lastMousePosition;
+    private Point? _lastDiagramPosition;
     private Point? _selectionStart;
     private Point? _selectionEnd;
     private Node? _draggedNode;
     private List<Node> _draggedNodes = new();
-    private Point _dragOffset;
+    private Node? _hoveredNode;
+    
+    // Context menu state
+    private bool _contextMenuVisible;
+    private Point _contextMenuPosition = Point.Zero;
+    private List<ContextMenuItem>? _contextMenuItems;
+    private object? _contextMenuTarget;
     
     [Parameter] public DiagramModel? Model { get; set; }
     [Parameter] public string Width { get; set; } = "100%";
@@ -171,6 +210,7 @@
     [Parameter] public RenderFragment<Node>? NodeTemplate { get; set; }
     [Parameter] public EventCallback<Node> OnNodeClicked { get; set; }
     [Parameter] public EventCallback<List<Node>> OnSelectionChanged { get; set; }
+    [Parameter] public ContextMenuConfig? ContextMenuConfig { get; set; }
     
     protected override void OnInitialized()
     {
@@ -209,8 +249,11 @@
     {
         if (Model == null) return;
         
-        var diagramPoint = ScreenToDiagram(new Point(e.OffsetX, e.OffsetY));
-        _lastMousePosition = new Point(e.OffsetX, e.OffsetY);
+        var screenPoint = new Point(e.OffsetX, e.OffsetY);
+        var diagramPoint = ScreenToDiagram(screenPoint);
+        
+        _lastMousePosition = screenPoint;
+        _lastDiagramPosition = diagramPoint;
         
         if (e.Button == 0) // Left button
         {
@@ -245,8 +288,11 @@
     {
         if (Model == null) return;
         
-        var diagramPoint = ScreenToDiagram(new Point(e.OffsetX, e.OffsetY));
+        // Get mouse position in diagram coordinates
+        var diagramPoint = GetMousePositionInDiagram(e);
+        
         _lastMousePosition = new Point(e.OffsetX, e.OffsetY);
+        _lastDiagramPosition = diagramPoint;
         
         if (e.Button == 0) // Left button
         {
@@ -267,7 +313,6 @@
             {
                 _isDraggingNode = true;
                 _draggedNode = node;
-                _dragOffset = new Point(diagramPoint.X - node.Position.X, diagramPoint.Y - node.Position.Y);
                 
                 // Collect all selected nodes for multi-drag
                 _draggedNodes = Model.GetSelectedNodes().ToList();
@@ -294,15 +339,16 @@
             );
             _renderContext.PanOffset = Model.PanOffset;
         }
-        else if (_isDraggingNode && _draggedNode != null)
+        else if (_isDraggingNode && _draggedNode != null && _lastDiagramPosition.HasValue)
         {
-            var newPos = new Point(diagramPoint.X - _dragOffset.X, diagramPoint.Y - _dragOffset.Y);
-            var deltaPos = newPos - _draggedNode.Position;
+            // Calculate the delta in diagram coordinates from the last position
+            var deltaX = diagramPoint.X - _lastDiagramPosition.Value.X;
+            var deltaY = diagramPoint.Y - _lastDiagramPosition.Value.Y;
             
-            // Move all selected nodes
+            // Move all selected nodes by the delta
             foreach (var node in _draggedNodes)
             {
-                node.Position = new Point(node.Position.X + deltaPos.X, node.Position.Y + deltaPos.Y);
+                node.Position = new Point(node.Position.X + deltaX, node.Position.Y + deltaY);
             }
         }
         else if (_isSelectingRect && _selectionStart.HasValue)
@@ -318,6 +364,7 @@
         }
         
         _lastMousePosition = currentPos;
+        _lastDiagramPosition = diagramPoint;
         StateHasChanged();
     }
     
@@ -337,6 +384,7 @@
         }
         
         _lastMousePosition = null;
+        _lastDiagramPosition = null;
     }
     
     private void OnWheel(WheelEventArgs e)
@@ -430,6 +478,65 @@
         if (_isSelectingRect) return "crosshair";
         if (EnablePanning) return "default";
         return "default";
+    }
+    
+    /// <summary>
+    /// Gets the mouse position in screen coordinates and converts to diagram coordinates
+    /// </summary>
+    private Point GetMousePositionInDiagram(MouseEventArgs e)
+    {
+        // Use offsetX/offsetY which are relative to the SVG element
+        // Then convert to diagram coordinates using ScreenToDiagram
+        return ScreenToDiagram(new Point(e.OffsetX, e.OffsetY));
+    }
+    
+    /// <summary>
+    /// Handles right-click on a node to show context menu
+    /// </summary>
+    private void OnNodeContextMenu(MouseEventArgs e, Node node)
+    {
+        if (ContextMenuConfig == null) return;
+        
+        // Get menu items for the node
+        _contextMenuItems = ContextMenuConfig.NodeMenuItems?.Invoke(node);
+        if (_contextMenuItems == null || !_contextMenuItems.Any()) return;
+        
+        // Set position in screen coordinates (clientX/clientY for fixed positioning)
+        _contextMenuPosition = new Point(e.ClientX, e.ClientY);
+        _contextMenuTarget = node;
+        _contextMenuVisible = true;
+        
+        StateHasChanged();
+    }
+    
+    /// <summary>
+    /// Handles right-click on canvas to show context menu
+    /// </summary>
+    private void OnCanvasContextMenu(MouseEventArgs e)
+    {
+        if (Model == null || ContextMenuConfig == null) return;
+        
+        // Get menu items for the canvas
+        _contextMenuItems = ContextMenuConfig.CanvasMenuItems?.Invoke(Model);
+        if (_contextMenuItems == null || !_contextMenuItems.Any()) return;
+        
+        // Set position in screen coordinates
+        _contextMenuPosition = new Point(e.ClientX, e.ClientY);
+        _contextMenuTarget = Model;
+        _contextMenuVisible = true;
+        
+        StateHasChanged();
+    }
+    
+    /// <summary>
+    /// Closes the context menu
+    /// </summary>
+    private void CloseContextMenu()
+    {
+        _contextMenuVisible = false;
+        _contextMenuItems = null;
+        _contextMenuTarget = null;
+        StateHasChanged();
     }
 }
 

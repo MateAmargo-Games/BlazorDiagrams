@@ -73,6 +73,7 @@
             Department = "Executive"
         });
         ceo.Size = new Size(180, 90);
+        AddNodeActions(ceo);
 
         // C-Level
         var cto = _model.AddNode("2", new Point(200, 200), new EmployeeData
@@ -82,6 +83,7 @@
             Department = "Technology"
         });
         cto.Size = new Size(180, 90);
+        AddNodeActions(cto);
 
         var cfo = _model.AddNode("3", new Point(600, 200), new EmployeeData
         {
@@ -90,6 +92,7 @@
             Department = "Finance"
         });
         cfo.Size = new Size(180, 90);
+        AddNodeActions(cfo);
 
         // Department Heads
         var devManager = _model.AddNode("4", new Point(100, 350), new EmployeeData
@@ -99,6 +102,7 @@
             Department = "Engineering"
         });
         devManager.Size = new Size(180, 90);
+        AddNodeActions(devManager);
 
         var qaDirector = _model.AddNode("5", new Point(300, 350), new EmployeeData
         {
@@ -107,6 +111,7 @@
             Department = "Quality"
         });
         qaDirector.Size = new Size(180, 90);
+        AddNodeActions(qaDirector);
 
         // Create links
         _model.AddLink(ceo, cto);
@@ -165,6 +170,7 @@
                 Department = "Department"
             });
             newEmployee.Size = new Size(180, 90);
+            AddNodeActions(newEmployee);
             
             _model.AddLink(selected, newEmployee);
             _employeeCounter++;
@@ -189,6 +195,48 @@
         {
             ApplyLayout();
         }
+    }
+    
+    private void AddNodeActions(Node node)
+    {
+        // Add edit action
+        node.AddAction("✏️", n =>
+        {
+            // In a real app, this would open an edit dialog
+            if (n.Data is EmployeeData emp)
+            {
+                emp.Name = $"{emp.Name} (edited)";
+                StateHasChanged();
+            }
+        }, "Edit Employee", NodeActionPosition.TopRight);
+        
+        // Add delete action (but not for CEO)
+        if (node.Id != "1")
+        {
+            node.AddAction("🗑️", n =>
+            {
+                _model.RemoveNode(n);
+                ApplyLayout();
+            }, "Delete Employee", NodeActionPosition.TopLeft);
+        }
+        
+        // Add action to add subordinate
+        node.AddAction("➕", n =>
+        {
+            var newEmployee = _model.AddNode($"emp{_employeeCounter}", new Point(0, 0), new EmployeeData
+            {
+                Name = $"New Employee {_employeeCounter}",
+                Title = "New Position",
+                Department = "Department"
+            });
+            newEmployee.Size = new Size(180, 90);
+            AddNodeActions(newEmployee);
+            
+            _model.AddLink(n, newEmployee);
+            _employeeCounter++;
+            
+            ApplyLayout();
+        }, "Add Subordinate", NodeActionPosition.BottomCenter);
     }
 
     public class EmployeeData

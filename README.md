@@ -10,11 +10,14 @@ A powerful and fully native Blazor .NET 8 library for creating interactive diagr
 
 ## 🚀 Features
 
-- **100% Native Blazor** - No JavaScript interop required
+- **100% Native Blazor** - Minimal JavaScript interop (only for mouse position accuracy)
 - **SVG Rendering** - High-quality vector graphics
 - **Multiple Layouts** - Tree, Force-Directed, Circular, Grid, Layered Digraph
 - **Interactive** - Drag & drop, zoom, pan, multi-select
-- **Customizable** - Full template support with RenderFragment
+- **Node Actions** - Add interactive buttons and controls within nodes
+- **Context Menus** - Fully customizable right-click menus for nodes, links, and canvas
+- **Theming System** - Built-in themes (Light, Dark, Blueprint) with full customization
+- **Customizable Styles** - Control colors, shapes, gradients, shadows, and more
 - **Data Binding** - Bidirectional binding with INotifyPropertyChanged
 - **Undo/Redo** - Complete command pattern implementation
 - **Ports & Groups** - Advanced connection and grouping features
@@ -121,9 +124,77 @@ _model.Layout = new LayeredDigraphLayout
 BlazorDiagrams supports full customization through:
 
 - **Templates**: Use RenderFragment for custom node/link appearance
-- **Styles**: CSS styling for all visual elements
+- **Themes**: Built-in Light, Dark, and Blueprint themes with full customization
+- **Node Actions**: Add interactive buttons directly on nodes
+- **Context Menus**: Right-click menus for nodes, links, and canvas
+- **Styles**: Full control over colors, shapes, gradients, shadows
 - **Data Binding**: Attach any data model to nodes and links
 - **Events**: Handle clicks, selections, and other interactions
+
+### Node Actions
+
+Add interactive buttons to your nodes:
+
+```csharp
+node.AddAction("✏️", n => {
+    // Edit action
+}, "Edit", NodeActionPosition.TopRight);
+
+node.AddAction("🗑️", n => {
+    model.RemoveNode(n);
+}, "Delete", NodeActionPosition.TopLeft);
+```
+
+### Context Menus
+
+Configure customizable right-click menus:
+
+```csharp
+var contextMenuConfig = new ContextMenuConfig
+{
+    Theme = ContextMenuTheme.Light,
+    NodeMenuItems = node => new List<ContextMenuItem>
+    {
+        new ContextMenuItem
+        {
+            Label = "Edit",
+            Icon = "✏️",
+            Action = _ => EditNode(node),
+            Shortcut = "E"
+        },
+        new ContextMenuItem
+        {
+            Label = "Delete",
+            Icon = "🗑️",
+            Action = _ => model.RemoveNode(node),
+            Shortcut = "Del"
+        }
+    }
+};
+```
+
+### Theming
+
+Apply built-in or custom themes:
+
+```csharp
+// Use a built-in theme
+model.Theme = DiagramTheme.Dark;
+
+// Or customize your own
+model.Theme = new DiagramTheme
+{
+    Name = "Custom",
+    BackgroundColor = "#f5f5f5",
+    GridColor = "#e0e0e0",
+    DefaultNodeStyle = new NodeStyleConfig
+    {
+        FillColor = "#ffffff",
+        StrokeColor = "#333333",
+        Shape = NodeShape.RoundedRectangle
+    }
+};
+```
 
 ## 🤝 Contributing
 

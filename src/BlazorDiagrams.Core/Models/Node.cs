@@ -1,4 +1,5 @@
 using BlazorDiagrams.Core.Geometry;
+using BlazorDiagrams.Core.Styling;
 
 namespace BlazorDiagrams.Core.Models;
 
@@ -19,6 +20,7 @@ public class Node : GraphObject
     private string _stroke = "#000000";
     private double _strokeWidth = 1;
     private double _cornerRadius;
+    private NodeStyleConfig? _styleConfig;
     
     /// <summary>
     /// Position of the node in diagram coordinates
@@ -169,6 +171,20 @@ public class Node : GraphObject
     public List<Link> Links { get; } = new();
     
     /// <summary>
+    /// Interactive actions that can be displayed on this node
+    /// </summary>
+    public List<NodeAction> Actions { get; } = new();
+    
+    /// <summary>
+    /// Custom style configuration for this node (overrides theme defaults)
+    /// </summary>
+    public NodeStyleConfig? StyleConfig
+    {
+        get => _styleConfig;
+        set => SetProperty(ref _styleConfig, value);
+    }
+    
+    /// <summary>
     /// Gets the bounding rectangle of this node
     /// </summary>
     public Rect Bounds => new(Position, Size);
@@ -261,6 +277,62 @@ public class Node : GraphObject
         );
         
         return new Point(center.X + dx * t, center.Y + dy * t);
+    }
+    
+    /// <summary>
+    /// Adds an action to this node
+    /// </summary>
+    public NodeAction AddAction(NodeAction action)
+    {
+        Actions.Add(action);
+        return action;
+    }
+    
+    /// <summary>
+    /// Adds an action to this node with simplified configuration
+    /// </summary>
+    public NodeAction AddAction(string icon, Action<Node> onClick, string? tooltip = null, 
+        NodeActionPosition position = NodeActionPosition.TopRight)
+    {
+        var action = new NodeAction
+        {
+            Icon = icon,
+            OnClick = onClick,
+            Tooltip = tooltip,
+            Position = position
+        };
+        Actions.Add(action);
+        return action;
+    }
+    
+    /// <summary>
+    /// Removes an action from this node
+    /// </summary>
+    public bool RemoveAction(NodeAction action)
+    {
+        return Actions.Remove(action);
+    }
+    
+    /// <summary>
+    /// Removes an action by its ID
+    /// </summary>
+    public bool RemoveAction(string actionId)
+    {
+        var action = Actions.FirstOrDefault(a => a.Id == actionId);
+        return action != null && Actions.Remove(action);
+    }
+    
+    /// <summary>
+    /// Gets an action by its ID
+    /// </summary>
+    public NodeAction? GetAction(string actionId) => Actions.FirstOrDefault(a => a.Id == actionId);
+    
+    /// <summary>
+    /// Clears all actions from this node
+    /// </summary>
+    public void ClearActions()
+    {
+        Actions.Clear();
     }
 }
 

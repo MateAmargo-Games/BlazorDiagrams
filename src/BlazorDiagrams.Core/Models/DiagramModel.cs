@@ -1,5 +1,6 @@
 using BlazorDiagrams.Core.Geometry;
 using BlazorDiagrams.Core.Layouts;
+using BlazorDiagrams.Core.Styling;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 
@@ -15,6 +16,7 @@ public class DiagramModel : INotifyPropertyChanged
     private Point _panOffset = Point.Zero;
     private bool _isReadOnly;
     private Rect _viewport = new(0, 0, 1000, 800);
+    private DiagramTheme _theme = DiagramTheme.Light;
     
     public DiagramModel()
     {
@@ -104,6 +106,19 @@ public class DiagramModel : INotifyPropertyChanged
         {
             _viewport = value;
             OnPropertyChanged(nameof(Viewport));
+        }
+    }
+    
+    /// <summary>
+    /// Theme configuration for the diagram
+    /// </summary>
+    public DiagramTheme Theme
+    {
+        get => _theme;
+        set
+        {
+            _theme = value;
+            OnPropertyChanged(nameof(Theme));
         }
     }
     
