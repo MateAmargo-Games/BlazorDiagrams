@@ -1,0 +1,140 @@
+@using BlazorDiagrams.Core.Models
+@using BlazorDiagrams.Core.Geometry
+@using System.Collections.Specialized
+@typeparam T
+
+<Diagram Model="_model" 
+         Width="@Width" 
+         Height="@Height" 
+         BackgroundColor="@BackgroundColor"
+         ShowGrid="@ShowGrid"
+         GridSize="@GridSize"
+         ShowZoomControls="@ShowZoomControls"
+         EnablePanning="@EnablePanning"
+         EnableZoom="@EnableZoom"
+         NodeTemplate="@GetNodeTemplate()" />
+
+@code {
+    private DiagramModel _model = new();
+    private HashSet<string> _knownKeys = new();
+
+    [Parameter] public IEnumerable<T>? Items { get; set; }
+    [Parameter] public Func<T, string> KeySelector { get; set; } = null!;
+    [Parameter] public Func<T, Point>? PositionSelector { get; set; }
+    [Parameter] public RenderFragment<T>? NodeTemplate { get; set; }
+    [Parameter] public EventCallback<T> OnChange { get; set; }
+    [Parameter] public Size NodeSize { get; set; } = new Size(200, 100);
+    
+    // Diagram parameters to pass through
+    [Parameter] public string Width { get; set; } = "100%";
+    [Parameter] public string Height { get; set; } = "600px";
+    [Parameter] public string BackgroundColor { get; set; } = "#ffffff";
+    [Parameter] public bool ShowGrid { get; set; } = true;
+    [Parameter] public double GridSize { get; set; } = 20;
+    [Parameter] public bool ShowZoomControls { get; set; } = true;
+    [Parameter] public bool EnablePanning { get; set; } = true;
+    [Parameter] public bool EnableZoom { get; set; } = true;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        
+        if (KeySelector == null)
+        {
+            throw new ArgumentNullException(nameof(KeySelector), "KeySelector is required for DiagramData.");
+        }
+        
+        // Subscribe to node changes to trigger OnChange
+        _model.Nodes.CollectionChanged += OnNodesCollectionChanged;
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        SyncData();
+    }
+
+    private void SyncData()
+    {
+        if (Items == null)
+        {
+            _model.Nodes.Clear();
+            _knownKeys.Clear();
+            return;
+        }
+
+        var currentKeys = new HashSet<string>();
+
+        foreach (var item in Items)
+        {
+            var key = KeySelector(item);
+            currentKeys.Add(key);
+
+            if (!_knownKeys.Contains(key))
+            {
+                // New item, create node
+                var position = PositionSelector?.Invoke(item) ?? Point.Zero;
+                var node = new Node
+                {
+                    Id = key,
+                    Position = position,
+                    Size = NodeSize,
+                    Data = item // Store the item in Node.Data
+                };
+                
+                // Subscribe to individual node changes if needed
+                var capturedItem = item; // Capture for closure
+                node.PropertyChanged += async (s, e) => 
+                {
+                    if (e.PropertyName == nameof(Node.Position) && OnChange.HasDelegate)
+                    {
+                        await OnChange.InvokeAsync(capturedItem);
+                    }
+                };
+
+                _model.Nodes.Add(node);
+                _knownKeys.Add(key);
+            }
+            else
+            {
+                // Existing item, update if needed (e.g. data changed)
+                var node = _model.GetNode(key);
+                if (node != null)
+                {
+                    node.Data = item; // Update data reference
+                    // Note: Position update from source is tricky because it might conflict with user drag.
+                    // For now, we assume source position is initial only, or we'd need a way to force update.
+                }
+            }
+        }
+
+        // Remove nodes that are no longer in Items
+        var nodesToRemove = _model.Nodes.Where(n => !currentKeys.Contains(n.Id)).ToList();
+        foreach (var node in nodesToRemove)
+        {
+            _model.Nodes.Remove(node);
+            _knownKeys.Remove(node.Id);
+        }
+    }
+
+    private RenderFragment<Node> GetNodeTemplate()
+    {
+        return node => builder =>
+        {
+            if (NodeTemplate != null && node.Data is T item)
+            {
+                builder.AddContent(0, NodeTemplate(item));
+            }
+        };
+    }
+    
+    private void OnNodesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        // Handle internal node additions/removals if necessary
+        // Ideally, we only want to react to user actions, not our own sync actions.
+        // But since SyncData modifies the collection, we might need to be careful.
+        // For now, we rely on the fact that SyncData is driven by Items.
+    }
+    
+    public DiagramModel GetDiagramModel() => _model;
+}
