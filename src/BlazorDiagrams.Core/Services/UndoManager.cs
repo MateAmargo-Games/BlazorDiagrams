@@ -175,6 +175,9 @@ public class UndoManager
         return new UndoTransaction(this, description);
     }
     
+    /// <summary>
+    /// Raises the <see cref="StateChanged"/> event
+    /// </summary>
     protected virtual void OnStateChanged()
     {
         StateChanged?.Invoke(this, EventArgs.Empty);
@@ -225,6 +228,9 @@ public class UndoTransaction : IDisposable
         }
     }
     
+    /// <summary>
+    /// Disposes the transaction, committing it if not already committed
+    /// </summary>
     public void Dispose()
     {
         if (!_committed)

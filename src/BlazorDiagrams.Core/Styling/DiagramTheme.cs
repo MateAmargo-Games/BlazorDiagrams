@@ -157,9 +157,24 @@ public class DiagramTheme
 /// </summary>
 public enum GridStyle
 {
+    /// <summary>
+    /// Dot grid pattern
+    /// </summary>
     Dots,
+    
+    /// <summary>
+    /// Line grid pattern
+    /// </summary>
     Lines,
+    
+    /// <summary>
+    /// Crosshair grid pattern
+    /// </summary>
     Crosshairs,
+    
+    /// <summary>
+    /// No grid
+    /// </summary>
     None
 }
 

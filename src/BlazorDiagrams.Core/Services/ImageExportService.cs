@@ -11,6 +11,9 @@ public class ImageExportService
 {
     private readonly IJSRuntime _jsRuntime;
     
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ImageExportService"/> class.
+    /// </summary>
     public ImageExportService(IJSRuntime jsRuntime)
     {
         _jsRuntime = jsRuntime;

@@ -99,11 +99,34 @@ public class LinkStyleConfig
 /// </summary>
 public enum ArrowheadStyle
 {
+    /// <summary>
+    /// Filled arrowhead
+    /// </summary>
     Filled,
+    
+    /// <summary>
+    /// Open arrowhead (V shape)
+    /// </summary>
     Open,
+    
+    /// <summary>
+    /// Diamond shape
+    /// </summary>
     Diamond,
+    
+    /// <summary>
+    /// Circle shape
+    /// </summary>
     Circle,
+    
+    /// <summary>
+    /// Square shape
+    /// </summary>
     Square,
+    
+    /// <summary>
+    /// No arrowhead
+    /// </summary>
     None
 }
 

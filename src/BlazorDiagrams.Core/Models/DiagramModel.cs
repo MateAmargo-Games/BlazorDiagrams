@@ -18,6 +18,9 @@ public class DiagramModel : INotifyPropertyChanged
     private Rect _viewport = new(0, 0, 1000, 800);
     private DiagramTheme _theme = DiagramTheme.Light;
     
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DiagramModel"/> class.
+    /// </summary>
     public DiagramModel()
     {
         Nodes = new ObservableCollection<Node>();
@@ -127,8 +130,13 @@ public class DiagramModel : INotifyPropertyChanged
     /// </summary>
     public Dictionary<string, object?> Properties { get; } = new();
     
+    /// <inheritdoc />
     public event PropertyChangedEventHandler? PropertyChanged;
     
+    /// <summary>
+    /// Raises the PropertyChanged event.
+    /// </summary>
+    /// <param name="propertyName">The name of the property that changed.</param>
     protected virtual void OnPropertyChanged(string propertyName)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

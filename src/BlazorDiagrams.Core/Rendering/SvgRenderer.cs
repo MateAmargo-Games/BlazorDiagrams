@@ -11,6 +11,9 @@ public class SvgRenderer
 {
     private readonly RenderContext _context;
     
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SvgRenderer"/> class.
+    /// </summary>
     public SvgRenderer(RenderContext context)
     {
         _context = context;

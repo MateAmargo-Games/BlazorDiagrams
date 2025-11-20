@@ -8,7 +8,14 @@ namespace BlazorDiagrams.Core.Interaction;
 /// </summary>
 public class ContextMenuService
 {
+    /// <summary>
+    /// Event raised when a context menu is requested
+    /// </summary>
     public event EventHandler<ContextMenuEventArgs>? ContextMenuRequested;
+
+    /// <summary>
+    /// Event raised when the context menu is closed
+    /// </summary>
     public event EventHandler? ContextMenuClosed;
     
     /// <summary>
@@ -119,8 +126,19 @@ public class ContextMenuItem
 /// </summary>
 public enum ContextMenuIconType
 {
+    /// <summary>
+    /// CSS class based icon
+    /// </summary>
     Css,
+    
+    /// <summary>
+    /// Emoji character icon
+    /// </summary>
     Emoji,
+    
+    /// <summary>
+    /// SVG path icon
+    /// </summary>
     Svg
 }
 
@@ -129,7 +147,14 @@ public enum ContextMenuIconType
 /// </summary>
 public class TooltipService
 {
+    /// <summary>
+    /// Event raised when a tooltip is requested
+    /// </summary>
     public event EventHandler<TooltipEventArgs>? TooltipRequested;
+
+    /// <summary>
+    /// Event raised when a tooltip is closed
+    /// </summary>
     public event EventHandler? TooltipClosed;
     
     private System.Timers.Timer? _showTimer;

@@ -43,6 +43,7 @@ public class GridLayout : ILayout
     /// </summary>
     public Comparison<Node>? NodeComparer { get; set; }
     
+    /// <inheritdoc />
     public void Apply(DiagramModel model)
     {
         if (model.Nodes.Count == 0)
@@ -100,6 +101,7 @@ public class GridLayout : ILayout
         CenterDiagram(model);
     }
     
+    /// <inheritdoc />
     public void ApplyToGroup(Group group)
     {
         // Similar logic for groups
@@ -153,14 +155,49 @@ public class GridLayout : ILayout
 /// </summary>
 public enum GridAlignment
 {
+    /// <summary>
+    /// Align top-left
+    /// </summary>
     TopLeft,
+    
+    /// <summary>
+    /// Align top-center
+    /// </summary>
     TopCenter,
+    
+    /// <summary>
+    /// Align top-right
+    /// </summary>
     TopRight,
+    
+    /// <summary>
+    /// Align left-center
+    /// </summary>
     LeftCenter,
+    
+    /// <summary>
+    /// Align center
+    /// </summary>
     Center,
+    
+    /// <summary>
+    /// Align right-center
+    /// </summary>
     RightCenter,
+    
+    /// <summary>
+    /// Align bottom-left
+    /// </summary>
     BottomLeft,
+    
+    /// <summary>
+    /// Align bottom-center
+    /// </summary>
     BottomCenter,
+    
+    /// <summary>
+    /// Align bottom-right
+    /// </summary>
     BottomRight
 }
 

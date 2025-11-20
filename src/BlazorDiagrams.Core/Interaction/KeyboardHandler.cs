@@ -11,6 +11,9 @@ public class KeyboardHandler
     private readonly DiagramModel _model;
     private readonly Dictionary<string, Action> _shortcuts = new();
     
+    /// <summary>
+    /// Initializes a new instance of the <see cref="KeyboardHandler"/> class.
+    /// </summary>
     public KeyboardHandler(DiagramModel model)
     {
         _model = model;

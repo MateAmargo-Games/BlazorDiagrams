@@ -28,6 +28,7 @@ public class LayeredDigraphLayout : ILayout
     /// </summary>
     public int CrossingReductionIterations { get; set; } = 10;
     
+    /// <inheritdoc />
     public void Apply(DiagramModel model)
     {
         if (model.Nodes.Count == 0)
@@ -52,6 +53,7 @@ public class LayeredDigraphLayout : ILayout
         RestoreReversedLinks(reversedLinks);
     }
     
+    /// <inheritdoc />
     public void ApplyToGroup(Group group)
     {
         // Similar logic for groups
@@ -303,9 +305,24 @@ public class LayeredDigraphLayout : ILayout
 /// </summary>
 public enum LayoutDirection
 {
+    /// <summary>
+    /// Top to bottom
+    /// </summary>
     Down,
+    
+    /// <summary>
+    /// Bottom to top
+    /// </summary>
     Up,
+    
+    /// <summary>
+    /// Left to right
+    /// </summary>
     Right,
+    
+    /// <summary>
+    /// Right to left
+    /// </summary>
     Left
 }
 

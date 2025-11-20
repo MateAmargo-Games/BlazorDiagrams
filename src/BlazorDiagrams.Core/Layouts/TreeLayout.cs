@@ -43,6 +43,7 @@ public class TreeLayout : ILayout
     /// </summary>
     public Comparison<Node>? ChildComparer { get; set; }
     
+    /// <inheritdoc />
     public void Apply(DiagramModel model)
     {
         if (model.Nodes.Count == 0)
@@ -63,6 +64,7 @@ public class TreeLayout : ILayout
         }
     }
     
+    /// <inheritdoc />
     public void ApplyToGroup(Group group)
     {
         // Similar logic for group layouts
@@ -267,7 +269,14 @@ public class TreeLayout : ILayout
 /// </summary>
 public enum TreeArrangement
 {
+    /// <summary>
+    /// Vertical arrangement (top-to-bottom or bottom-to-top)
+    /// </summary>
     Vertical,
+    
+    /// <summary>
+    /// Horizontal arrangement (left-to-right or right-to-left)
+    /// </summary>
     Horizontal
 }
 
@@ -276,9 +285,24 @@ public enum TreeArrangement
 /// </summary>
 public enum TreeAlignment
 {
+    /// <summary>
+    /// Align to start
+    /// </summary>
     Start,
+    
+    /// <summary>
+    /// Align to center
+    /// </summary>
     Center,
+    
+    /// <summary>
+    /// Align to end
+    /// </summary>
     End,
+    
+    /// <summary>
+    /// Center over children
+    /// </summary>
     CenterChildren
 }
 

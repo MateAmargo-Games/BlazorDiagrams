@@ -45,6 +45,7 @@ public class ForceDirectedLayout : ILayout
     
     private Random _random = new Random();
     
+    /// <inheritdoc />
     public void Apply(DiagramModel model)
     {
         if (model.Nodes.Count == 0)
@@ -70,6 +71,7 @@ public class ForceDirectedLayout : ILayout
         CenterDiagram(model);
     }
     
+    /// <inheritdoc />
     public void ApplyToGroup(Group group)
     {
         // Similar logic for groups

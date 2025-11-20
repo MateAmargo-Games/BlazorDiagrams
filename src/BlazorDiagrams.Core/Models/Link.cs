@@ -270,8 +270,19 @@ public class Link : GraphObject
 /// </summary>
 public enum LinkRouting
 {
+    /// <summary>
+    /// Straight line
+    /// </summary>
     Straight,
+    
+    /// <summary>
+    /// Orthogonal lines (right angles)
+    /// </summary>
     Orthogonal,
+    
+    /// <summary>
+    /// Bezier curve
+    /// </summary>
     Bezier
 }
 
@@ -280,10 +291,29 @@ public enum LinkRouting
 /// </summary>
 public enum ArrowheadStyle
 {
+    /// <summary>
+    /// No arrowhead
+    /// </summary>
     None,
+    
+    /// <summary>
+    /// Standard triangular arrowhead
+    /// </summary>
     Standard,
+    
+    /// <summary>
+    /// Open arrowhead (V shape)
+    /// </summary>
     Open,
+    
+    /// <summary>
+    /// Diamond shape
+    /// </summary>
     Diamond,
+    
+    /// <summary>
+    /// Circle shape
+    /// </summary>
     Circle
 }
 

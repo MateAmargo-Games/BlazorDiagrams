@@ -147,12 +147,34 @@ public class PerformanceMonitor
 /// </summary>
 public class MetricSummary
 {
+    /// <summary>
+    /// Name of the metric
+    /// </summary>
     public string Name { get; set; } = "";
+
+    /// <summary>
+    /// Average duration in milliseconds
+    /// </summary>
     public double Average { get; set; }
+
+    /// <summary>
+    /// Minimum duration in milliseconds
+    /// </summary>
     public long Min { get; set; }
+
+    /// <summary>
+    /// Maximum duration in milliseconds
+    /// </summary>
     public long Max { get; set; }
+
+    /// <summary>
+    /// Number of samples collected
+    /// </summary>
     public int SampleCount { get; set; }
     
+    /// <summary>
+    /// Returns a string representation of the metric summary
+    /// </summary>
     public override string ToString()
     {
         return $"{Name}: Avg={Average:F2}ms, Min={Min}ms, Max={Max}ms, Samples={SampleCount}";

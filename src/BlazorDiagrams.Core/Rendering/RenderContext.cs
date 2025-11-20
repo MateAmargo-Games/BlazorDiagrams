@@ -8,13 +8,44 @@ namespace BlazorDiagrams.Core.Rendering;
 /// </summary>
 public class RenderContext
 {
+    /// <summary>
+    /// The diagram model being rendered
+    /// </summary>
     public DiagramModel Model { get; set; } = null!;
+
+    /// <summary>
+    /// The visible viewport area
+    /// </summary>
     public Rect Viewport { get; set; }
+
+    /// <summary>
+    /// Current zoom level
+    /// </summary>
     public double Zoom { get; set; } = 1.0;
+
+    /// <summary>
+    /// Current pan offset
+    /// </summary>
     public Point PanOffset { get; set; } = Point.Zero;
+
+    /// <summary>
+    /// Whether to show the background grid
+    /// </summary>
     public bool ShowGrid { get; set; } = true;
+
+    /// <summary>
+    /// Size of the grid cells
+    /// </summary>
     public double GridSize { get; set; } = 20;
+
+    /// <summary>
+    /// Color of the grid lines
+    /// </summary>
     public string GridColor { get; set; } = "#e0e0e0";
+
+    /// <summary>
+    /// Background color of the diagram
+    /// </summary>
     public string BackgroundColor { get; set; } = "#ffffff";
     
     /// <summary>

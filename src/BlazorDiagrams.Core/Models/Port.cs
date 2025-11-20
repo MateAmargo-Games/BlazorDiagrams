@@ -152,14 +152,49 @@ public class Port : GraphObject
 /// </summary>
 public enum PortAlignment
 {
+    /// <summary>
+    /// Top left corner
+    /// </summary>
     TopLeft,
+    
+    /// <summary>
+    /// Top center
+    /// </summary>
     TopCenter,
+    
+    /// <summary>
+    /// Top right corner
+    /// </summary>
     TopRight,
+    
+    /// <summary>
+    /// Middle left
+    /// </summary>
     LeftCenter,
+    
+    /// <summary>
+    /// Center
+    /// </summary>
     Center,
+    
+    /// <summary>
+    /// Middle right
+    /// </summary>
     RightCenter,
+    
+    /// <summary>
+    /// Bottom left corner
+    /// </summary>
     BottomLeft,
+    
+    /// <summary>
+    /// Bottom center
+    /// </summary>
     BottomCenter,
+    
+    /// <summary>
+    /// Bottom right corner
+    /// </summary>
     BottomRight
 }
 

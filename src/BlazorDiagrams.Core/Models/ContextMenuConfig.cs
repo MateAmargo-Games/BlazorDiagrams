@@ -69,8 +69,19 @@ public class ContextMenuConfig
 /// </summary>
 public enum ContextMenuTheme
 {
+    /// <summary>
+    /// Light theme
+    /// </summary>
     Light,
+    
+    /// <summary>
+    /// Dark theme
+    /// </summary>
     Dark,
+    
+    /// <summary>
+    /// Auto-detect system theme
+    /// </summary>
     Auto
 }
 
@@ -79,9 +90,24 @@ public enum ContextMenuTheme
 /// </summary>
 public enum ContextMenuTarget
 {
+    /// <summary>
+    /// Node target
+    /// </summary>
     Node,
+    
+    /// <summary>
+    /// Link target
+    /// </summary>
     Link,
+    
+    /// <summary>
+    /// Canvas (empty space) target
+    /// </summary>
     Canvas,
+    
+    /// <summary>
+    /// Group target
+    /// </summary>
     Group
 }
 

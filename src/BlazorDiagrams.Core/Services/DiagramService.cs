@@ -8,6 +8,9 @@ namespace BlazorDiagrams.Core.Services;
 /// </summary>
 public class DiagramService
 {
+    /// <summary>
+    /// Gets the undo manager for the diagram
+    /// </summary>
     public UndoManager UndoManager { get; } = new();
     
     /// <summary>

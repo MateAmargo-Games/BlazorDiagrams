@@ -38,6 +38,7 @@ public class CircularLayout : ILayout
     /// </summary>
     public Comparison<Node>? NodeComparer { get; set; }
     
+    /// <inheritdoc />
     public void Apply(DiagramModel model)
     {
         if (model.Nodes.Count == 0)
@@ -82,6 +83,7 @@ public class CircularLayout : ILayout
         CenterDiagram(model);
     }
     
+    /// <inheritdoc />
     public void ApplyToGroup(Group group)
     {
         // Similar logic for groups

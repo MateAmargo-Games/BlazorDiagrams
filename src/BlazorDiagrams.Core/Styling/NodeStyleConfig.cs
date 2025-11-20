@@ -124,14 +124,49 @@ public class NodeStyleConfig
 /// </summary>
 public enum NodeShape
 {
+    /// <summary>
+    /// Rectangle shape
+    /// </summary>
     Rectangle,
+    
+    /// <summary>
+    /// Rounded rectangle shape
+    /// </summary>
     RoundedRectangle,
+    
+    /// <summary>
+    /// Circle shape
+    /// </summary>
     Circle,
+    
+    /// <summary>
+    /// Ellipse shape
+    /// </summary>
     Ellipse,
+    
+    /// <summary>
+    /// Diamond shape
+    /// </summary>
     Diamond,
+    
+    /// <summary>
+    /// Triangle shape
+    /// </summary>
     Triangle,
+    
+    /// <summary>
+    /// Hexagon shape
+    /// </summary>
     Hexagon,
+    
+    /// <summary>
+    /// Parallelogram shape
+    /// </summary>
     Parallelogram,
+    
+    /// <summary>
+    /// Custom shape
+    /// </summary>
     Custom
 }
 
@@ -140,10 +175,29 @@ public enum NodeShape
 /// </summary>
 public enum FillPattern
 {
+    /// <summary>
+    /// Solid color fill
+    /// </summary>
     Solid,
+    
+    /// <summary>
+    /// Gradient fill
+    /// </summary>
     Gradient,
+    
+    /// <summary>
+    /// Striped pattern
+    /// </summary>
     Striped,
+    
+    /// <summary>
+    /// Dotted pattern
+    /// </summary>
     Dotted,
+    
+    /// <summary>
+    /// No fill
+    /// </summary>
     None
 }
 
