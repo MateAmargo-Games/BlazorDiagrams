@@ -389,6 +389,9 @@
     
     private void OnWheel(WheelEventArgs e)
     {
+        // Ignore wheel events if middle button is pressed (to avoid conflict with panning/autoscroll)
+        if ((e.Buttons & 4) == 4) return;
+
         if (Model == null || !EnableZoom) return;
         
         var zoomFactor = e.DeltaY < 0 ? 1.1 : 0.9;
