@@ -249,8 +249,8 @@
     {
         if (Model == null) return;
         
-        var screenPoint = new Point(e.OffsetX, e.OffsetY);
-        var diagramPoint = ScreenToDiagram(screenPoint);
+        var screenPoint = new Point(e.ClientX, e.ClientY);
+        var diagramPoint = ScreenToDiagram(new Point(e.OffsetX, e.OffsetY));
         
         _lastMousePosition = screenPoint;
         _lastDiagramPosition = diagramPoint;
@@ -291,7 +291,7 @@
         // Get mouse position in diagram coordinates
         var diagramPoint = GetMousePositionInDiagram(e);
         
-        _lastMousePosition = new Point(e.OffsetX, e.OffsetY);
+        _lastMousePosition = new Point(e.ClientX, e.ClientY);
         _lastDiagramPosition = diagramPoint;
         
         if (e.Button == 0) // Left button
@@ -327,8 +327,8 @@
     {
         if (Model == null || !_lastMousePosition.HasValue) return;
         
-        var currentPos = new Point(e.OffsetX, e.OffsetY);
-        var diagramPoint = ScreenToDiagram(currentPos);
+        var currentPos = new Point(e.ClientX, e.ClientY);
+        var diagramPoint = ScreenToDiagram(new Point(e.OffsetX, e.OffsetY));
         
         if (_isPanning && EnablePanning)
         {
@@ -339,11 +339,11 @@
             );
             _renderContext.PanOffset = Model.PanOffset;
         }
-        else if (_isDraggingNode && _draggedNode != null && _lastDiagramPosition.HasValue)
+        else if (_isDraggingNode && _draggedNode != null && _lastMousePosition.HasValue)
         {
-            // Calculate the delta in diagram coordinates from the last position
-            var deltaX = diagramPoint.X - _lastDiagramPosition.Value.X;
-            var deltaY = diagramPoint.Y - _lastDiagramPosition.Value.Y;
+            // Calculate the delta in screen coordinates
+            var deltaX = (currentPos.X - _lastMousePosition.Value.X) / Model.Zoom;
+            var deltaY = (currentPos.Y - _lastMousePosition.Value.Y) / Model.Zoom;
             
             // Move all selected nodes by the delta
             foreach (var node in _draggedNodes)
