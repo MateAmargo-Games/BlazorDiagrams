@@ -1,0 +1,42 @@
+<div class="code-snippet">
+    <div class="header">
+        <span class="title">@Title</span>
+    </div>
+    <div class="content">
+        <pre><code>@Code</code></pre>
+    </div>
+</div>
+
+<style>
+    .code-snippet {
+        margin-top: 2rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .code-snippet .header {
+        background-color: #f5f5f5;
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid #e0e0e0;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .code-snippet .content {
+        padding: 1rem;
+        background-color: #fafafa;
+        overflow-x: auto;
+    }
+
+    .code-snippet pre {
+        margin: 0;
+        font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+        font-size: 0.9rem;
+    }
+</style>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Source Code";
+    [Parameter] public string Code { get; set; } = "";
+}

@@ -1,5 +1,6 @@
 @page "/circular"
 @rendermode InteractiveServer
+@using BlazorDiagrams.Samples.Components.Shared
 
 <PageTitle>Circular Layout Sample</PageTitle>
 
@@ -56,6 +57,8 @@
     <strong>Tip:</strong> El Circular Layout es ideal para visualizar relaciones donde todos los nodos tienen importancia similar. 
     Ajusta el radio para cambiar la densidad del layout.
 </div>
+
+<CodeSnippet Title="CircularSample.razor" Code="@SnippetCode" />
 
 @code {
     private DiagramModel _model = new();
@@ -201,5 +204,29 @@
         public int? Value { get; set; }
         public int Category { get; set; }
     }
-}
 
+    private const string SnippetCode = @"<Diagram Model=""@_model"" ...>
+    <NodeTemplate Context=""node"">
+        <!-- Custom node template -->
+    </NodeTemplate>
+</Diagram>
+
+@code {
+    private DiagramModel _model = new();
+
+    protected override void OnInitialized()
+    {
+        // Create nodes and links
+        // ...
+        
+        // Apply circular layout
+        var layout = new CircularLayout
+        {
+            Radius = 200,
+            StartAngle = 0,
+            AutoRadius = false
+        };
+        layout.Apply(_model);
+    }
+}";
+}

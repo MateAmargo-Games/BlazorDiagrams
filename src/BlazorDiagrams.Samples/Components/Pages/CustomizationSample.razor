@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @using BlazorDiagrams.Core.Interaction
 @using BlazorDiagrams.Core.Styling
+@using BlazorDiagrams.Samples.Components.Shared
 
 <PageTitle>Customization Sample</PageTitle>
 
@@ -64,6 +65,8 @@
         <li><strong>Drag & Drop:</strong> All nodes are draggable with smooth movement</li>
     </ul>
 </div>
+
+<CodeSnippet Title="CustomizationSample.razor" Code="@SnippetCode" />
 
 @code {
     private DiagramModel _model = new();
@@ -332,5 +335,33 @@
         public string Description { get; set; } = "";
         public string Category { get; set; } = "info";
     }
-}
 
+    private const string SnippetCode = @"<Diagram Model=""@_model"" 
+         ContextMenuConfig=""@_contextMenuConfig"" ...>
+    <NodeTemplate Context=""node"">
+        <!-- Custom node template -->
+    </NodeTemplate>
+</Diagram>
+
+@code {
+    private DiagramModel _model = new();
+    private ContextMenuConfig _contextMenuConfig;
+
+    protected override void OnInitialized()
+    {
+        // Configure context menu
+        _contextMenuConfig = new ContextMenuConfig
+        {
+            NodeMenuItems = node => new List<ContextMenuItem>
+            {
+                new ContextMenuItem { Label = ""Edit"", Action = ... },
+                new ContextMenuItem { Label = ""Delete"", Action = ... }
+            }
+        };
+
+        // Add nodes with actions
+        var node = _model.AddNode(""1"", ...);
+        node.AddAction(""✏️"", n => EditNode(n), ""Edit"");
+    }
+}";
+}

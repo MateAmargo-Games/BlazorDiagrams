@@ -1,117 +1,93 @@
-@page "/data-binding"
+@page "/databinding"
 @rendermode InteractiveServer
 @using BlazorDiagrams.Core.Geometry
-@using BlazorDiagrams.Core.Components
+@using BlazorDiagrams.Samples.Components.Shared
 
-<div class="container">
-    <div class="controls">
-        <button @onclick="AddUser">Add User</button>
-        <button @onclick="RemoveUser">Remove Last User</button>
-        <button @onclick="ModifyUser">Modify First User</button>
-    </div>
+<PageTitle>Data Binding Sample</PageTitle>
 
-    <div class="diagram-container">
-        <DiagramData Items="@_users" 
-                     KeySelector="@(u => u.Id)" 
-                     PositionSelector="@(u => u.Location)">
-            
-            <NodeTemplate Context="user">
-                <div class="user-card @(user.Role == "Admin" ? "admin" : "")">
-                    <div class="header">@user.Name</div>
-                    <div class="role">@user.Role</div>
-                </div>
-            </NodeTemplate>
+<h1>Data Binding Example</h1>
 
-        </DiagramData>
-    </div>
+<p>Demonstration of the DiagramData component for binding data to the diagram.</p>
+
+<div style="margin-bottom: 20px;">
+    <button class="btn btn-primary" @onclick="AddUser">Add User</button>
+    <button class="btn btn-danger" @onclick="RemoveUser">Remove Last User</button>
+    <button class="btn btn-secondary" @onclick="ModifyUser">Modify Random User</button>
+    <button class="btn btn-info" @onclick="AddRandomLink">Add Random Link</button>
+    <button class="btn btn-warning" @onclick="RemoveLastLink">Remove Last Link</button>
 </div>
 
-<style>
-    .container {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        gap: 10px;
-    }
-    
-    .controls {
-        display: flex;
-        gap: 10px;
-        padding: 10px;
-        background: #f5f5f5;
-    }
-    
-    .diagram-container {
-        flex-grow: 1;
-        border: 1px solid #ddd;
-        height: 600px;
-    }
+<div style="border: 1px solid #ddd; border-radius: 5px; overflow: hidden;">
+    <DiagramData T="User"
+                 Items="@_users" 
+                 KeySelector="@(u => u.Id)" 
+                 PositionSelector="@(u => u.Location)"
+                 Links="@_links"
+                 LinkSourceKeySelector="@(l => ((LinkData)l).SourceId)"
+                 LinkTargetKeySelector="@(l => ((LinkData)l).TargetId)">
+        <NodeTemplate Context="user">
+            <div style="width: 100%; height: 100%; padding: 10px; 
+                        background: white; 
+                        border-radius: 5px;
+                        border: 2px solid #007bff;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;">
+                <div style="font-weight: bold;">@user.Name</div>
+                <div style="font-size: 12px; color: #666;">@user.Role</div>
+            </div>
+        </NodeTemplate>
+    </DiagramData>
+</div>
 
-    .user-card {
-        width: 150px;
-        background: white;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        overflow: hidden;
-    }
-    
-    .user-card.admin {
-        border-color: #d9534f;
-    }
-    
-    .user-card .header {
-        background: #f8f9fa;
-        padding: 8px;
-        font-weight: bold;
-        border-bottom: 1px solid #eee;
-    }
-    
-    .user-card.admin .header {
-        background: #d9534f;
-        color: white;
-    }
-    
-    .user-card .role {
-        padding: 8px;
-        font-size: 0.9em;
-        color: #666;
-    }
-</style>
+<div class="mt-3">
+    <strong>Users:</strong> @_users.Count | <strong>Links:</strong> @_links.Count
+</div>
+
+<CodeSnippet Title="DataBindingPage.razor" Code="@SnippetCode" />
 
 @code {
     private List<User> _users = new();
-    private int _counter = 1;
+    private List<LinkData> _links = new();
+    private int _userCounter = 1;
+    private Random _random = new();
 
     protected override void OnInitialized()
     {
         // Initial data
-        _users.Add(new User { Id = "1", Name = "Alice", Role = "Admin", Location = new Point(100, 100) });
-        _users.Add(new User { Id = "2", Name = "Bob", Role = "User", Location = new Point(300, 100) });
-        _users.Add(new User { Id = "3", Name = "Charlie", Role = "User", Location = new Point(100, 250) });
-        _counter = 4;
+        _users.Add(new User { Id = "1", Name = "Alice", Role = "Manager", Location = new Point(100, 100) });
+        _users.Add(new User { Id = "2", Name = "Bob", Role = "Developer", Location = new Point(300, 100) });
+        _users.Add(new User { Id = "3", Name = "Charlie", Role = "Designer", Location = new Point(200, 250) });
+        _userCounter = 4;
+
+        // Initial links
+        _links.Add(new LinkData("1", "2"));
+        _links.Add(new LinkData("2", "3"));
     }
 
     private void AddUser()
     {
-        var id = _counter++.ToString();
-        var x = new Random().Next(50, 500);
-        var y = new Random().Next(50, 400);
-        
         _users.Add(new User 
         { 
-            Id = id, 
-            Name = $"User {id}", 
-            Role = "User", 
-            Location = new Point(x, y) 
+            Id = _userCounter.ToString(), 
+            Name = $"User {_userCounter}", 
+            Role = "Employee", 
+            Location = new Point(_random.Next(50, 500), _random.Next(50, 400)) 
         });
+        _userCounter++;
     }
 
     private void RemoveUser()
     {
         if (_users.Any())
         {
-            _users.RemoveAt(_users.Count - 1);
+            var userToRemove = _users.Last();
+            _users.Remove(userToRemove);
+            
+            // Remove associated links
+            _links.RemoveAll(l => l.SourceId == userToRemove.Id || l.TargetId == userToRemove.Id);
         }
     }
 
@@ -119,20 +95,33 @@
     {
         if (_users.Any())
         {
-            var user = _users.First();
-            user.Name = user.Name + "*";
-            // Force re-render to show name change
-            // In a real app with ObservableCollection or INotifyPropertyChanged, this might be automatic
-            // But DiagramData checks reference or collection changes.
-            // For property changes inside an item, we might need to trigger update manually if the item instance is same.
-            // However, DiagramData.razor currently doesn't listen to property changes of T.
-            // So we might need to replace the item or trigger StateHasChanged on DiagramData (which happens when parent renders).
+            var user = _users[_random.Next(_users.Count)];
+            user.Name = $"{user.Name} (Modified)";
+            // Force UI update since we're modifying an object inside the list
+            // In a real app, you might use ObservableCollection or similar
+            StateHasChanged();
         }
     }
 
-    private void OnUserChanged(User user)
+    private void AddRandomLink()
     {
-        Console.WriteLine($"User {user.Name} changed. New location: {user.Location}");
+        if (_users.Count < 2) return;
+
+        var source = _users[_random.Next(_users.Count)];
+        var target = _users[_random.Next(_users.Count)];
+
+        if (source.Id != target.Id && !_links.Any(l => l.SourceId == source.Id && l.TargetId == target.Id))
+        {
+            _links.Add(new LinkData(source.Id, target.Id));
+        }
+    }
+
+    private void RemoveLastLink()
+    {
+        if (_links.Any())
+        {
+            _links.RemoveAt(_links.Count - 1);
+        }
     }
 
     public class User
@@ -142,4 +131,44 @@
         public string Role { get; set; } = "";
         public Point Location { get; set; }
     }
+
+    public class LinkData
+    {
+        public string SourceId { get; set; }
+        public string TargetId { get; set; }
+
+        public LinkData(string sourceId, string targetId)
+        {
+            SourceId = sourceId;
+            TargetId = targetId;
+        }
+    }
+
+    private const string SnippetCode = @"<DiagramData Items=""@_users"" 
+             KeySelector=""@(u => u.Id)"" 
+             PositionSelector=""@(u => u.Location)""
+             Links=""@_links""
+             LinkSourceKeySelector=""@(l => ((LinkData)l).SourceId)""
+             LinkTargetKeySelector=""@(l => ((LinkData)l).TargetId)"">
+    <NodeTemplate Context=""user"">
+        <div class=""node"">
+            <div>@user.Name</div>
+            <div>@user.Role</div>
+        </div>
+    </NodeTemplate>
+</DiagramData>
+
+@code {
+    private List<User> _users = new();
+    private List<LinkData> _links = new();
+
+    protected override void OnInitialized()
+    {
+        // Add users
+        _users.Add(new User { Id = ""1"", ... });
+        
+        // Add links
+        _links.Add(new LinkData(""1"", ""2""));
+    }
+}";
 }

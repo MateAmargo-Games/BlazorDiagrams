@@ -17,6 +17,7 @@
 @code {
     private DiagramModel _model = new();
     private HashSet<string> _knownKeys = new();
+    private HashSet<string> _knownLinkKeys = new();
 
     [Parameter] public IEnumerable<T>? Items { get; set; }
     [Parameter] public Func<T, string> KeySelector { get; set; } = null!;
@@ -25,6 +26,12 @@
     [Parameter] public EventCallback<T> OnChange { get; set; }
     [Parameter] public Size NodeSize { get; set; } = new Size(200, 100);
     
+    // Link parameters
+    [Parameter] public IEnumerable<object>? Links { get; set; }
+    [Parameter] public Func<object, string>? LinkSourceKeySelector { get; set; }
+    [Parameter] public Func<object, string>? LinkTargetKeySelector { get; set; }
+    [Parameter] public Func<object, string>? LinkKeySelector { get; set; }
+
     // Diagram parameters to pass through
     [Parameter] public string Width { get; set; } = "100%";
     [Parameter] public string Height { get; set; } = "600px";
@@ -55,6 +62,12 @@
     }
 
     private void SyncData()
+    {
+        SyncNodes();
+        SyncLinks();
+    }
+
+    private void SyncNodes()
     {
         if (Items == null)
         {
@@ -114,6 +127,73 @@
         {
             _model.Nodes.Remove(node);
             _knownKeys.Remove(node.Id);
+        }
+    }
+
+    private void SyncLinks()
+    {
+        if (Links == null)
+        {
+            _model.Links.Clear();
+            _knownLinkKeys.Clear();
+            return;
+        }
+
+        if (LinkSourceKeySelector == null || LinkTargetKeySelector == null)
+        {
+            // Cannot sync links without selectors
+            return;
+        }
+
+        var currentLinkKeys = new HashSet<string>();
+
+        foreach (var linkItem in Links)
+        {
+            var sourceKey = LinkSourceKeySelector(linkItem);
+            var targetKey = LinkTargetKeySelector(linkItem);
+            var linkKey = LinkKeySelector?.Invoke(linkItem) ?? $"{sourceKey}-{targetKey}";
+            
+            currentLinkKeys.Add(linkKey);
+
+            if (!_knownLinkKeys.Contains(linkKey))
+            {
+                var sourceNode = _model.GetNode(sourceKey);
+                var targetNode = _model.GetNode(targetKey);
+
+                if (sourceNode != null && targetNode != null)
+                {
+                    var link = new Link
+                    {
+                        Id = linkKey,
+                        FromNode = sourceNode,
+                        ToNode = targetNode,
+                        Data = linkItem
+                    };
+                    _model.Links.Add(link);
+                    _knownLinkKeys.Add(linkKey);
+                    
+                    // Ensure the link is connected to the nodes
+                    sourceNode.Links.Add(link);
+                    targetNode.Links.Add(link);
+                }
+            }
+            else
+            {
+                // Existing link, update data if needed
+                var link = _model.GetLink(linkKey);
+                if (link != null)
+                {
+                    link.Data = linkItem;
+                }
+            }
+        }
+
+        // Remove links that are no longer in Links collection
+        var linksToRemove = _model.Links.Where(l => !currentLinkKeys.Contains(l.Id)).ToList();
+        foreach (var link in linksToRemove)
+        {
+            _model.Links.Remove(link);
+            _knownLinkKeys.Remove(link.Id);
         }
     }
 
